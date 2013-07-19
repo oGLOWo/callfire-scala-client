@@ -32,5 +32,6 @@ libraryDependencies ++= Seq(
   "org.scalaj"           %   "scalaj-time_2.10.0-M7"    % "0.6",
   "org.scalaz"           %%  "scalaz-core"              % "7.0.2",
   "com.chuusai"          %%  "shapeless"                % "1.2.4",
-  "com.typesafe"         %%  "scalalogging-slf4j"       % "1.0.1"
+  "com.typesafe"         %%  "scalalogging-slf4j"       % "1.0.1",
+  "com.github.nscala-time" %% "nscala-time" % "0.4.2"
 )

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!--callfire-ann.xsd, 1.1-->
+<schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://api.callfire.com/annotations"
+        elementFormDefault="qualified"
+        targetNamespace="http://api.callfire.com/annotations"><!-- version in which the annotation target (service, operation, parameter) -->
+    <attribute name="sinceVersion" type="decimal"/>
+    <!-- version in which element deprecated (service, operation, parameter) -->
+    <attribute name="deprecatedVersion" type="decimal"/>
+    <!-- simple REST param for the annotated element -->
+    <attribute name="restParam" type="token"/>
+    <attribute name="requiredIn">
+        <simpleType>
+            <list itemType="tns:restMethod"/>
+        </simpleType>
+    </attribute>
+    <attribute name="responseOnly" type="boolean" default="false"/>
+    <!-- explicit definition of REST HTTP method -->
+    <simpleType name="restMethod">
+        <restriction base="token">
+            <enumeration value="GET"/>
+            <enumeration value="POST"/>
+            <enumeration value="PUT"/>
+            <enumeration value="DELETE"/>
+        </restriction>
+    </simpleType>
+    <!-- REST operation info -->
+    <element name="restOperation">
+        <complexType>
+            <attribute name="path" type="string"/>
+            <attribute name="method" type="tns:restMethod"/>
+        </complexType>
+    </element>
+    <element name="condition">
+        <complexType>
+            <attribute name="field" use="required"/>
+            <attribute name="value" use="required"/>
+        </complexType>
+    </element>
+    <!-- text documentation structure --><!-- summary should be 60 chars or less -->
+    <element name="summary" type="string"/>
+    <element name="description">
+        <complexType>
+            <sequence>
+                <any minOccurs="0" maxOccurs="unbounded" namespace="http://www.w3.org/1999/xhtml"/>
+            </sequence>
+        </complexType>
+    </element>
+    <!-- Documentation links to CallFire website help. -->
+    <element name="link" type="string"/>
+    <!-- Demo value to show in documentation sample call. -->
+    <element name="demoValue" type="string"/>
+    <!-- Documentation generation settings. Use 'hideDoc' to keep from documentation being generated. -->
+    <element name="docGeneration">
+        <complexType>
+            <attribute name="hideDoc" type="boolean" default="false"/>
+        </complexType>
+    </element>
+    <!-- used as a placeholders in content that needs to echo the request's path and version -->
+    <element name="version"/>
+    <element name="baseUrl"/>
+</schema>
