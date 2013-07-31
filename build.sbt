@@ -33,5 +33,6 @@ libraryDependencies ++= Seq(
   "org.scalaz"           %%  "scalaz-core"              % "7.0.2",
   "com.chuusai"          %%  "shapeless"                % "1.2.4",
   "com.typesafe"         %%  "scalalogging-slf4j"       % "1.0.1",
-  "com.github.nscala-time" %% "nscala-time" % "0.4.2"
+  "com.github.nscala-time" %% "nscala-time" % "0.4.2",
+  "org.bouncycastle"     %   "bcprov-jdk15on"           % "1.49"
 )

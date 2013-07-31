@@ -11,6 +11,7 @@ import spray.httpx.SprayJsonSupport
 import SprayJsonSupport._
 import ExecutionContext.Implicits.global
 import com.oglowo.callfire.entity.ApiError
+import com.oglowo.callfire.json.ApiEntityFormats._
 
 package object callfire {
   implicit def pimpHttpResponseFuture(responseFuture: Future[HttpResponse]) = new PimpedHttpResponseFuture(responseFuture)

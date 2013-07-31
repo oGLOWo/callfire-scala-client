@@ -9,13 +9,13 @@ import akka.pattern.ask
 import akka.event.Logging
 import akka.io.IO
 import scala.util.{Failure, Success}
-import spray.http.HttpResponse
+import spray.http.{BasicHttpCredentials, HttpRequest, HttpResponse}
 import spray.httpx.UnsuccessfulResponseException
 import spray.can.Http
 import spray.client.pipelining._
 import spray.util._
 import scala.concurrent.duration._
-import com.oglowo.callfire.entity.ApiError
+import com.oglowo.callfire.entity.{ApiError, PhoneNumber}
 import com.oglowo.callfire.json.ApiEntityFormats._
 
 object Client {
@@ -27,37 +27,42 @@ object Client {
 
   val connection = {
     for {
-      Http.HostConnectorInfo(connector, _) <- IO(Http) ? Http.HostConnectorSetup("localhost", port = 8080)
+      Http.HostConnectorInfo(connector, _) <- IO(Http) ? Http.HostConnectorSetup("www.callfire.com", port = 443, sslEncryption = true)
     } yield connector
   }.await
 
-  def pipeline: SendReceive = sendReceive(connection)
+  def debugRequest(request: HttpRequest): Unit = {
+    log.debug("!!!!! -> {} {} {}", request.uri, request.entity, request.message)
+    log.debug(request.toString)
+  }
 
-  def get[T](path: String): Future[HttpResponse] = pipeline {
+  def pipeline = addCredentials(BasicHttpCredentials("89459683b251", "c950391d0b9a89d5")) ~> logRequest(debugRequest _) ~> sendReceive(connection)
+
+  def get(path: String): Future[HttpResponse] = pipeline {
     Get(path)
   }
 
   def shutdown(): Unit = {
-    IO(Http).ask(Http.CloseAll)(1.second).await
+    IO(Http).ask(Http.CloseAll)(1.seconds).await
     system.shutdown()
   }
 
   def main(args: Array[String]) {
-    val userId = args(0)
-    log.info("Requesting some user id {}", userId)
+    val path = args(0)
+    log.info("Requesting path {}", path)
 
-//    get(s"/users/$userId").as[Number] onComplete {
-//      case Success(user) => {
-//        log.info("The user is {}", user)
-//        shutdown()
-//      }
-//      case Failure(error) => {
-//        error match {
-//          case e: UnsuccessfulResponseException => log.info("API ERROR {}", e.asApiError)
-//          case e: Throwable => log.error(e, "BOOO NON API ERROR")
-//        }
-//        shutdown()
-//      }
-//    }
+    get(path) onComplete {
+      case Success(response) => {
+        log.info("The response is {}", response)
+        shutdown()
+      }
+      case Failure(error) => {
+        error match {
+          case e: UnsuccessfulResponseException => log.info("API ERROR {}", e.asApiError)
+          case e: Throwable => log.error(e, "BOOO NON API ERROR")
+        }
+        shutdown()
+      }
+    }
   }
 }
