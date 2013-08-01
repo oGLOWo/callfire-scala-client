@@ -51,7 +51,7 @@ object Client {
     val path = args(0)
     log.info("Requesting path {}", path)
 
-    get(path) onComplete {
+    get(path).as[PhoneNumber] onComplete {
       case Success(response) => {
         log.info("The response is {}", response)
         shutdown()
