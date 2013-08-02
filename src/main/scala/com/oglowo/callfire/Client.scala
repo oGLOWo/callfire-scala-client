@@ -36,7 +36,8 @@ object Client {
     log.debug(request.toString)
   }
 
-  def pipeline = addCredentials(BasicHttpCredentials("89459683b251", "c950391d0b9a89d5")) ~> logRequest(debugRequest _) ~> sendReceive(connection)
+  def pipeline =
+    addCredentials(BasicHttpCredentials("", "")) ~> logRequest(debugRequest _) ~> sendReceive(connection)
 
   def get(path: String): Future[HttpResponse] = pipeline {
     Get(path)

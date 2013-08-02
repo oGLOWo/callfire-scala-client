@@ -32,7 +32,7 @@ object ApiEntityFormats extends DefaultJsonProtocol {
       case regionJson: JsObject => {
         val fields = regionJson.fields
         val prefix = fields.get("Prefix") match {
-          case Some(JsString(value)) => Option(value)
+          case Some(JsNumber(value)) => Option(value.toLong)
           case _ => None
         }
         val city = fields.get("City") match {
@@ -44,7 +44,7 @@ object ApiEntityFormats extends DefaultJsonProtocol {
           case _ => None
         }
         val postalCode = fields.get("Zipcode") match {
-          case Some(JsString(value)) => Option(value)
+          case Some(JsNumber(value)) => Option(value.toLong)
           case _ => None
         }
         val country = fields.get("Country") match {
@@ -52,7 +52,7 @@ object ApiEntityFormats extends DefaultJsonProtocol {
           case _ => None
         }
         val localAccessTransportArea = fields.get("Lata") match {
-          case Some(JsString(value)) => Option(value)
+          case Some(JsNumber(value)) => Option(value.toLong)
           case _ => None
         }
         val rateCenter = fields.get("RateCenter") match {
@@ -121,10 +121,10 @@ object ApiEntityFormats extends DefaultJsonProtocol {
           case _ => None
         }
 
-        inboundCallConfigurationType match {
-          case Some(IvrConfigurationType) => {
-            fields.get("InboundCallConfiguration") match {
-              case Some(JsObject(iccFields)) => {
+        fields.get("InboundCallConfiguration") match {
+          case Some(JsObject(iccFields)) => {
+            inboundCallConfigurationType match {
+              case Some(IvrConfigurationType) => {
                 iccFields.get("IvrInboundConfig") match {
                   case Some(JsObject(ivrConfigFields)) => {
                     val dialplanXml = ivrConfigFields.get("DialplanXml") match {
@@ -140,13 +140,42 @@ object ApiEntityFormats extends DefaultJsonProtocol {
                   case _ => deserializationError("Failure deserializing NumberConfiguration because its InboundCallConfiguration object did not contain the IvrInboundConfig object")
                 }
               }
-              case _ => deserializationError("Failure deserializing NumberConfiguration because it had an InboundCallConfigurationType, but no InboundCallConfiguration object")
+              case Some(CallTrackingConfigurationType) => {
+                iccFields.get("CallTrackingConfig") match {
+                  case Some(JsObject(callTrackingConfigFields)) => {
+                    val id: Option[Long] = callTrackingConfigFields.get("@id") match {
+                      case Some(JsString(value)) => Option(value.toLong)
+                      case _ => None
+                    }
+                    val transferNumbers: Set[String] = callTrackingConfigFields.get("TransferNumber") match {
+                      case Some(JsString(value)) => value.split(" ").toSet
+                      case _ => Set.empty
+                    }
+                    val screen: Boolean = callTrackingConfigFields.get("Screen") match {
+                      case Some(JsBoolean(value)) => value
+                      case _ => false
+                    }
+                    val record: Boolean = callTrackingConfigFields.get("Record") match {
+                      case Some(JsBoolean(value)) => value
+                      case _ => false
+                    }
+                    val introductionSoundId: Option[Long] = callTrackingConfigFields.get("IntroSoundId") match {
+                      case Some(JsNumber(value)) => Option(value.toLong)
+                      case _ => None
+                    }
+                    val whisperSoundId: Option[Long] = callTrackingConfigFields.get("WhisperSoundId") match {
+                      case Some(JsNumber(value)) => Option(value.toLong)
+                      case _ => None
+                    }
+                    PhoneNumberConfiguration(callFeature, textFeature, Some(CallTrackingConfiguration(transferNumbers, screen, record, introductionSoundId, whisperSoundId, id)))
+                  }
+                  case _ => deserializationError("Failure deserializing NumberConfiguration because its InboundCallConfiguration object did not contain the CallTrackingConfig object")
+                }
+              }
+              case _ => PhoneNumberConfiguration(callFeature, textFeature, None)
             }
           }
-          case Some(CallTrackingConfigurationType) => {
-            null
-          }
-          case _ => PhoneNumberConfiguration(callFeature, textFeature, None)
+          case _ => deserializationError("Failure deserializing NumberConfiguration because it did not have an InboundCallConfiguration object")
         }
       }
       case _ => deserializationError("Failed to deserialize PhoneNumberConfiguration because it was not a JsonObject")
