@@ -7,40 +7,43 @@ import spray.util.SprayActorLogging
 import scala.util.Random
 import spray.can.Http
 import spray.http._
+import spray.http.ContentTypes._
 import spray.httpx.encoding.Gzip
 import spray.http.HttpRequest
 import spray.http.HttpResponse
 import scala.concurrent.ExecutionContext
+import scalaz._
+import Scalaz._
+import spray.http.HttpHeaders._
 
-trait FakeClientConnection extends ClientConnection {
-  object Implicits {
-    implicit val system: ActorSystem = ActorSystem("fake-callfire-scala-spray-client")
-    implicit val context: ExecutionContext = system.dispatcher
-    implicit val timeout: Timeout = 15.seconds
-  }
+trait FakeClientConnection extends ClientConnection with FakeResponses {
+  implicit val system: ActorSystem = ActorSystem("fake-callfire-scala-spray-client")
+  implicit val context: ExecutionContext = system.dispatcher
+  implicit val timeout: Timeout = 15.seconds
 
-  val system = Implicits.system
-  val context = Implicits.context
-  val timeout = Implicits.timeout
+  def createContentTypeHeader(contentType: ContentType) = `Content-Type`(contentType)
+  def createDateHeader(dateTime: DateTime = DateTime.now) = Date(dateTime)
+  def createContentLengthHeader(entity: HttpEntity = EmptyEntity) =
+    `Content-Length`(entity match {
+      case EmptyEntity => 0
+      case HttpBody(_, buffer) => buffer.length
+    })
+  def createVaryHeader(value: String = "User-Agent,Accept-Encoding") = RawHeader("Vary", value)
+
   val connection: ActorRef = system.actorOf(Props(
     new Actor with SprayActorLogging {
-      var dropNext = true
       val random = new Random(38)
+      var compressNext = random.nextBoolean()
+
       def receive = {
-        case _: Http.Connected ⇒ sender ! Http.Register(self)
-        case HttpRequest(_, Uri.Path("/compressedResponse"), _, _, _) ⇒ {
-          sender ! Gzip.encode(HttpResponse(entity = "content"))
-        }
-        case x: HttpRequest if x.uri.toString.startsWith("/drop1of2") && dropNext ⇒
-          log.debug("Dropping " + x)
-          dropNext = random.nextBoolean()
-        case x @ HttpRequest(method, uri, _, entity, _) ⇒
-          println("Responding to " + x)
-          dropNext = random.nextBoolean()
-          val mirroredHeaders = x.header[HttpHeaders.`User-Agent`].toList
-          sender ! HttpResponse(entity = method + "|" + uri.path + (if (entity.isEmpty) "" else "|" + entity.asString), headers = mirroredHeaders)
-        case Timedout(request)         ⇒ sender ! HttpResponse(entity = "TIMEOUT")
-        case ev: Http.ConnectionClosed ⇒ log.debug("Received " + ev)
+        case request @ HttpRequest(method, uri, headers, entity, protocol) =>
+          log.debug("Responding to " + request)
+          val response = HttpResponse(
+            entity = HttpEntity(`application/json`, InboundIvrConfiguredNumberGet),
+            headers = List(createContentTypeHeader(`application/json`), createContentLengthHeader(entity), createDateHeader(), createVaryHeader()))
+
+          sender ! (if (compressNext) Gzip.encode(response) else response)
+          compressNext = random.nextBoolean()
       }
     }), "handler")
 }

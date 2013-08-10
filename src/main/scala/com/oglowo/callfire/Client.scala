@@ -6,7 +6,7 @@ import akka.actor.{ActorSystem}
 import akka.pattern.ask
 import akka.io.IO
 import scala.util.{Failure, Success}
-import spray.http.{BasicHttpCredentials, HttpRequest, HttpResponse}
+import spray.http._
 import spray.httpx.UnsuccessfulResponseException
 import spray.can.Http
 import spray.client.pipelining._
@@ -14,34 +14,29 @@ import spray.util._
 import scala.concurrent.duration._
 import com.oglowo.callfire.entity.{ApiError, PhoneNumber}
 import com.oglowo.callfire.json.ApiEntityFormats._
-import com.typesafe.scalalogging.slf4j.{Logging, Logger}
 import akka.event.Logging
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.log4j.Logging
+import spray.httpx.encoding.{Gzip, Deflate}
 
 trait Client {
   this: ClientConnection =>
+  lazy val log = Logging(system, getClass)
 
-  implicit lazy val theContext = context
-  implicit lazy val theTimeout = timeout
-  implicit lazy val theSystem = system
-  lazy val log = Logging(theSystem, getClass)
-
-  def debugRequest(request: HttpRequest): Unit = {
-    log.debug("!!!!! -> {} {} {}", request.uri, request.entity, request.message)
-    log.debug(request.toString)
-  }
-
-  def pipeline = {
-
-    addCredentials(BasicHttpCredentials("8eccf6f02069", "1dd1705ba4fb8bb2")) ~> logRequest(debugRequest _) ~> sendReceive(connection)
-  }
+  import system.dispatcher
+  lazy val pipeline: HttpRequest => Future[HttpResponse] = (
+    addCredentials(BasicHttpCredentials("8eccf6f02069", "1dd1705ba4fb8bb2"))
+    ~> logRequest(log)
+    ~> sendReceive(connection)(context, timeout)
+    ~> decode(Deflate)
+    ~> decode(Gzip)
+  )
 
   def get(path: String): Future[HttpResponse] = pipeline {
     Get(path)
   }
 
   def shutdown(): Unit = {
-    IO(Http).ask(Http.CloseAll)(1.seconds).await
+    IO(Http)(system).ask(Http.CloseAll)(1.seconds).await
     system.shutdown()
   }
 }
@@ -66,5 +61,6 @@ object Main extends Logging {
         client.shutdown()
       }
     }
+
   }
 }
