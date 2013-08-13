@@ -1,52 +1,74 @@
 package com.oglowo.callfire
 
 import org.specs2.mutable._
-import spray.http.{HttpBody, StatusCodes, StatusCode, HttpResponse, ContentTypes}
-import ContentTypes._
+import spray.http._
+import org.specs2.specification.Scope
+import com.oglowo.callfire.entity._
+import com.oglowo.callfire.pimps._
+import scalaz._
+import Scalaz._
+import spray.httpx.UnsuccessfulResponseException
+import com.oglowo.callfire.json.ApiEntityFormats._
+import com.oglowo.callfire.entity.PhoneNumber
+import scala.util.Success
+import scala.util.Failure
+import com.oglowo.callfire.entity.ApiError
 
 class NumberEndpointSpec extends Specification {
   "Number Endpoint" should {
-    "parse a valid number configured with inbound IVR" {
+    "parse a valid number configured with inbound IVR" in new Data with Credentials {
+      var result: Either[ApiError, PhoneNumber] = Left(ApiError("Client-Side Default result", StatusCodes.RequestTimeout))
+
+      val client = new Client with FakeClientConnection
+      import client._
+
+      client.get(s"/api/1.1/rest/number/$IvrPhoneNumber.json").as[PhoneNumber] onComplete {
+        case Success(response) => result = Right(response)
+        case Failure(error) => result = error match {
+          case e: UnsuccessfulResponseException => Left(e.asApiError)
+          case e: Throwable => failure(e.getMessage)
+        }
+      }
+
+      result must eventually(10, 100.milliseconds) {
+        beRight.like {
+          case number => number.configuration.get.inboundCallConfiguration.get.inboundCallConfigurationType must beEqualTo(IvrConfigurationType)
+        }
+      }
+    }
+
+    "parse a valid number configured with Call Tracking" in new Data with Credentials {
+      var result: Either[ApiError, PhoneNumber] = Left(ApiError("Client-Side Default result", StatusCodes.RequestTimeout))
+
+      val client = new Client with FakeClientConnection
+      import client._
+      client.get(s"/api/1.1/rest/number/$CallTrackingPhoneNumber.json").as[PhoneNumber] onComplete {
+        case Success(response) => result = Right(response)
+        case Failure(error) => result = error match {
+          case e: UnsuccessfulResponseException => Left(e.asApiError)
+          case e: Throwable => failure(e.getMessage)
+        }
+      }
+
+      result must eventually(10, 100.milliseconds) {
+        beRight.like {
+          case number => number.configuration.get.inboundCallConfiguration.get.inboundCallConfigurationType must beEqualTo(CallTrackingConfigurationType)
+        }
+      }
+    }
+
+    "be able to update a number with a call tracking configuration" in new Data with Credentials {
 
     }
   }
 
   trait Credentials extends Scope {
-    val apiUser = "8eccf6f02069"
-    val apiPassword = "1dd1705ba4fb8bb2"
+    val ApiUser = "8eccf6f02069"
+    val ApiPassword = "1dd1705ba4fb8bb2"
   }
 
   trait Data extends Scope {
-    val RawInboundIvrConfiguredNumberResponseBody =
-      """
-        {
-          "Resource":{
-            "Number":{
-              "Number":18554459732,
-              "NationalFormat":"(855) 445-9732",
-              "TollFree":true,
-              "Status":"ACTIVE",
-              "LeaseInfo":{
-                "LeaseBegin":"2013-07-18Z",
-                "LeaseEnd":"2013-08-30Z",
-                "AutoRenew":true
-              },
-              "NumberConfiguration":{
-                "CallFeature":"ENABLED",
-                "TextFeature":"UNSUPPORTED",
-                "InboundCallConfigurationType":"IVR",
-                "InboundCallConfiguration":{
-                  "IvrInboundConfig":{
-                    "@id":"1174186001",
-                    "DialplanXml":"<dialplan name=\"VonjourDevelopmentTest\">\n  <menu name=\"main_menu\">\n    <play type=\"tts\" voice=\"female2\">\n    Hello there my fine feathered friend from ${call.callerid}. Press 1 if you want me to tell you off. Press 2 if you want me to transfer you to Adrian or Rob\n    <\/play>\n    <keypress pressed=\"2\">\n      <transfer callerid=\"${call.callerid}\" name=\"transfer_daniel_or_rob\" mode=\"ringall\" whisper-tts=\"Damnit, son! Do you know the Muffin Man? He's on the line!\">\n        12134485916,18319173474\n      <\/transfer>\n    <\/keypress>\n    <keypress pressed=\"1\">\n      <play type=\"tts\" name=\"ethnic_woman_talking_shit\" voice=\"spanish1\">\n        Que lo que manin! Dame luz papi que hay matatan? Sigue con tu baina y te voylalalal a caer en la conga co?o!\n      <\/play>\n    <\/keypress>\n  <\/menu>\n<\/dialplan>"
-                  }
-                }
-              }
-            }
-          }
-        }
-      """
-    val ValidInboundIvrConfiguredNumberResponse = HttpResponse(StatusCodes.OK, HttpBody(`application/json`, RawInboundIvrConfiguredNumberResponseBody.getBytes))
-
+    val CallTrackingPhoneNumber = "12133426826"
+    val IvrPhoneNumber = "18554459732"
   }
 }

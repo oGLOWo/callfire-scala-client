@@ -1,6 +1,10 @@
 package com.oglowo.callfire
 
+import scala.util.Random
+
 trait FakeResponses {
+  private[this] val random  = new Random(System.currentTimeMillis)
+
   val InboundIvrConfiguredNumberGet =
     """
       |{
@@ -77,5 +81,30 @@ trait FakeResponses {
       |}
     """.stripMargin
 
+  val AllNumberGets: Seq[String] = Seq(InboundCallTrackingConfiguredNumberGet, InboundIvrConfiguredNumberGet)
 
+  val PhoneNumberNotFoundError =
+    """
+      |{
+      |  "ResourceException":{
+      |    "HttpStatus":404,
+      |    "Message":"number 213342682 does not exist, or is inactive"
+      |  }
+      |}
+    """.stripMargin
+
+  val UnauthorizedError =
+    """
+      |{
+      |  "ResourceException":{
+      |    "HttpStatus":401,
+      |    "Message":"UNAUTHORIZED"
+      |  }
+      |}
+    """.stripMargin
+
+  val AllErrors: Seq[String] = Seq(PhoneNumberNotFoundError, UnauthorizedError)
+
+  def randomNumberGet(): String = AllNumberGets(random.nextInt(AllNumberGets.size))
+  def randomError(): String = AllErrors(random.nextInt(AllErrors.size))
 }

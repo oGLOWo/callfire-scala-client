@@ -14,6 +14,8 @@ trait ProductionClientConnection extends ClientConnection {
   implicit val context: ExecutionContext = system.dispatcher
   implicit val timeout: Timeout = 15.seconds
 
+  val credentials: Option[Pair[String, String]] = Some(("8eccf6f02069", "1dd1705ba4fb8bb2"))
+
   val connection: ActorRef = {
     for {
       Http.HostConnectorInfo(connector, _) <- IO(Http) ? Http.HostConnectorSetup("www.callfire.com", port = 443, sslEncryption = true)

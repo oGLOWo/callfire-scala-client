@@ -15,10 +15,15 @@ object ApiEntityFormats extends DefaultJsonProtocol {
 
     def read(json: JsValue): ApiError = json match {
       case jsonResponse: JsObject => {
-        jsonResponse.getFields("ResourceException").headOption
-        throw new DeserializationException("JSON did not contain ResourceException field")
-
-
+        jsonResponse.getFields("ResourceException").headOption match {
+          case Some(exceptionJson) => {
+            exceptionJson.asJsObject.getFields("HttpStatus", "Message") match {
+              case Seq(JsNumber(status), JsString(message)) => ApiError(message, status.intValue)
+              case _ => throw new DeserializationException("JSON did not contain required fields HttpStatus and Message")
+            }
+          }
+          case _ => throw new DeserializationException("JSON did not contain ResourceException field")
+        }
       }
 
       case default => throw new DeserializationException(s"Expected JsObject, but got ${default.getClass}")

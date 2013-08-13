@@ -17,22 +17,30 @@ import com.oglowo.callfire.json.ApiEntityFormats._
 import akka.event.Logging
 import com.typesafe.scalalogging.log4j.Logging
 import spray.httpx.encoding.{Gzip, Deflate}
+import spray.http.HttpHeaders._
+import pimps._
 
 trait Client {
   this: ClientConnection =>
   lazy val log = Logging(system, getClass)
 
+//  def logRequest(log: LoggingAdapter): HttpRequest ⇒ HttpRequest =
+//    logRequest { request ⇒ log.debug(request.toString) }
   import system.dispatcher
-  lazy val pipeline: HttpRequest => Future[HttpResponse] = (
-    addCredentials(BasicHttpCredentials("8eccf6f02069", "1dd1705ba4fb8bb2"))
-    ~> logRequest(log)
-    ~> sendReceive(connection)(context, timeout)
-    ~> decode(Deflate)
-    ~> decode(Gzip)
-  )
+  lazy val pipeline: HttpRequest => Future[HttpResponse] = {
+    addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "1.0", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.2-M8", "http://spray.io"))) ~>
+    logRequest(log) ~>
+    sendReceive(connection)(context, timeout) ~>
+    decode(Deflate) ~>
+    decode(Gzip)
+  }
 
   def get(path: String): Future[HttpResponse] = pipeline {
     Get(path)
+  }
+
+  def post(path: String, parameters: Map[String, String]): Future[HttpResponse] = pipeline {
+    Post(path, FormData(parameters))
   }
 
   def shutdown(): Unit = {
@@ -61,6 +69,5 @@ object Main extends Logging {
         client.shutdown()
       }
     }
-
   }
 }
