@@ -1,12 +1,23 @@
 package com.oglowo.callfire.callfirexml
 
-/**
- * Created with IntelliJ IDEA.
- * User: adrian
- * Date: 8/14/13
- * Time: 6:18 PM
- * To change this template use File | Settings | File Templates.
- */
-class DialPlan {
+import scala.xml.{TopScope, UnprefixedAttribute, MetaData, Elem}
+
+object Util {
+  def metadata(attributes: Map[String, _]): MetaData = {
+    // do some recursive shit here... might not be in this foreach, but we need to convert this set of attributes
+    // into some attr(attr(attr(attr())) type structure
+    null
+  }
+}
+
+case class DialPlan(name: Option[String] = None, loggingEnabled: Boolean = true, body: Seq[CallFireXmlTag])
+  extends Elem(null,
+    "dialplan",
+    Util.metadata(Map(
+        "name" -> name,
+        "loggingEnabled" -> loggingEnabled)),
+    TopScope,
+    false,
+    body:_*) with CallFireXmlTag {
 
 }

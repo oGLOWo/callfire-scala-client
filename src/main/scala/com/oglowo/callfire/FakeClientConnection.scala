@@ -37,7 +37,7 @@ trait FakeClientConnection extends ClientConnection with FakeResponses {
     })
   def createVaryHeader(value: String = "User-Agent,Accept-Encoding") = RawHeader("Vary", value)
 
-  val credentials: Option[Pair[String, String]] = Some(("", ""))
+  val credentials: Pair[String, String] = ("", "")
 
   val connection: ActorRef = system.actorOf(Props(
     new Actor with SprayActorLogging {

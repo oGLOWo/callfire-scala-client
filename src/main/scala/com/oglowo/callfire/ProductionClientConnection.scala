@@ -14,7 +14,7 @@ trait ProductionClientConnection extends ClientConnection {
   implicit val context: ExecutionContext = system.dispatcher
   implicit val timeout: Timeout = 15.seconds
 
-  val credentials: Option[Pair[String, String]] = Some(("8eccf6f02069", "1dd1705ba4fb8bb2"))
+  val credentials: Pair[String, String] = ("8eccf6f02069", "1dd1705ba4fb8bb2")
 
   val connection: ActorRef = {
     for {

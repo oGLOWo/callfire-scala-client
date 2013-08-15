@@ -10,5 +10,5 @@ trait ClientConnection {
   val system: ActorSystem
   val timeout: Timeout
   val connection: ActorRef
-  val credentials: Option[Pair[String, String]]
+  val credentials: Pair[String, String]
 }

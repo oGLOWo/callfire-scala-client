@@ -19,28 +19,74 @@ import com.typesafe.scalalogging.log4j.Logging
 import spray.httpx.encoding.{Gzip, Deflate}
 import spray.http.HttpHeaders._
 import pimps._
+import scalaz._
+import Scalaz._
 
 trait Client {
   this: ClientConnection =>
   lazy val log = Logging(system, getClass)
 
-//  def logRequest(log: LoggingAdapter): HttpRequest ⇒ HttpRequest =
-//    logRequest { request ⇒ log.debug(request.toString) }
+  //  def logRequest(log: LoggingAdapter): HttpRequest ⇒ HttpRequest =
+  //    logRequest { request ⇒ log.debug(request.toString) }
+
   import system.dispatcher
-  lazy val pipeline: HttpRequest => Future[HttpResponse] = {
-    addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "1.0", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.2-M8", "http://spray.io"))) ~>
-    logRequest(log) ~>
-    sendReceive(connection)(context, timeout) ~>
-    decode(Deflate) ~>
-    decode(Gzip)
+
+  lazy val pipeline: HttpRequest => Future[HttpResponse] = (
+    addCredentials(BasicHttpCredentials(credentials._1, credentials._2))
+      ~> addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "1.0", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.2-M8", "http://spray.io")))
+      ~> logRequest(log)
+      ~> sendReceive(connection)(context, timeout)
+      ~> decode(Deflate)
+      ~> decode(Gzip)
+    )
+
+  def get(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    maybeParameters match {
+      case Some(parameters) => Get(path, FormData(parameters))
+      case None => Get(path)
+    }
   }
 
-  def get(path: String): Future[HttpResponse] = pipeline {
-    Get(path)
+  def post(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    maybeParameters match {
+      case Some(parameters) => Post(path, FormData(parameters))
+      case None => Post(path)
+    }
   }
 
-  def post(path: String, parameters: Map[String, String]): Future[HttpResponse] = pipeline {
-    Post(path, FormData(parameters))
+  def put(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    maybeParameters match {
+      case Some(parameters) => Put(path, FormData(parameters))
+      case None => Put(path)
+    }
+  }
+
+  def patch(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    maybeParameters match {
+      case Some(parameters) => Patch(path, FormData(parameters))
+      case None => Patch(path)
+    }
+  }
+
+  def delete(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    maybeParameters match {
+      case Some(parameters) => Delete(path, FormData(parameters))
+      case None => Delete(path)
+    }
+  }
+
+  def head(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    maybeParameters match {
+      case Some(parameters) => Head(path, FormData(parameters))
+      case None => Head(path)
+    }
+  }
+
+  def options(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    maybeParameters match {
+      case Some(parameters) => Options(path, FormData(parameters))
+      case None => Options(path)
+    }
   }
 
   def shutdown(): Unit = {
@@ -51,20 +97,52 @@ trait Client {
 
 object Main extends Logging {
   def main(args: Array[String]) {
-    val path = args(0)
-    logger.info("Requesting path {}", path)
-    val client = new Client with FakeClientConnection
+    //    val path = args(0)
+    //    logger.info("Requesting path {}", path)
+    val client = new Client with ProductionClientConnection
     import client._
+    val dialplan = """<dialplan name="Root">
+                     |	<menu name="main_menu" maxDigits="1" timeout="3500">
+                     |		<play type="tts" voice="female2">Hello stupid face! Press 1 if you want me to tell you off. Press 2 if you want me to transfer you to Adrian</play>
+                     |		<keypress pressed="2">
+                     |			<transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" whisper-tts="Penis penis penis">
+                     |        12134485916
+                     |      </transfer>
+                     |		</keypress>
+                     |		<keypress pressed="1">
+                     |			<play name="ethnic_woman_talking_shit" type="tts" voice="spanish1">Hijo de to pinchi madre. Vete a la puta verga, pendejo!</play>
+                     |		</keypress>
+                     |	</menu>
+                     |</dialplan>
+                     | """.stripMargin('|')
 
-    client.get(path).as[PhoneNumber] onComplete {
+    client.put("/api/1.1/rest/number/12133426857.json", Some(Map(
+      "CallFeature" -> "ENABLED",
+      "TextFeature" -> "DISABLED",
+      "InboundCallConfigurationType" -> "IVR",
+      "DialplanXml" -> dialplan,
+      "Number" -> "12133426857")
+    )) onComplete {
       case Success(response) => {
-        logger.info("The response is {}", response)
-        client.shutdown()
+        logger.info("Response was: {} ... now getting the info", response.status)
+        client.get("/api/1.1/rest/number/12133426857.json").as[PhoneNumber] onComplete {
+          case Success(phoneNumber) => {
+            logger.info("The phoen number is {}", phoneNumber)
+            client.shutdown()
+          }
+          case Failure(error) => {
+            error match {
+              case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
+              case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
+            }
+            client.shutdown()
+          }
+        }
       }
       case Failure(error) => {
         error match {
           case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
-          case e: Throwable => logger.error("BOOO NON API ERROR", e)
+          case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
         }
         client.shutdown()
       }
