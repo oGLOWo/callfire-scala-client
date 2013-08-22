@@ -99,14 +99,17 @@ object Main extends Logging {
   def main(args: Array[String]) {
     //    val path = args(0)
     //    logger.info("Requesting path {}", path)
+    val set = Set(3)
+    set.nonEmpty
+
     val client = new Client with ProductionClientConnection
     import client._
     val dialplan = """<dialplan name="Root">
                      |	<menu name="main_menu" maxDigits="1" timeout="3500">
-                     |		<play type="tts" voice="female2">Hello stupid face! Press 1 if you want me to tell you off. Press 2 if you want me to transfer you to Adrian</play>
+                     |		<play type="tts" voice="female2">Hey! Press 1 if you want me to tell you off. Press 2 if you want me to transfer you to Adrian or Daniel</play>
                      |		<keypress pressed="2">
                      |			<transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" whisper-tts="Penis penis penis">
-                     |        12134485916
+                     |        12134485916,13107738288
                      |      </transfer>
                      |		</keypress>
                      |		<keypress pressed="1">
@@ -116,19 +119,44 @@ object Main extends Logging {
                      |</dialplan>
                      | """.stripMargin('|')
 
-    client.put("/api/1.1/rest/number/12133426857.json", Some(Map(
-      "CallFeature" -> "ENABLED",
-      "TextFeature" -> "DISABLED",
-      "InboundCallConfigurationType" -> "IVR",
-      "DialplanXml" -> dialplan,
-      "Number" -> "12133426857")
-    )) onComplete {
+    client.post("/api/1.1/rest/number/order.json", Some(Map(
+      "localCount" -> "1",
+      "tollFreeCount" -> "1"
+    ))) onComplete {
+      case Failure(error) => {
+        error match {
+          case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
+          case e: Throwable => logger.error("NON API ERROR!", e)
+        }
+        client.shutdown()
+      }
       case Success(response) => {
-        logger.info("Response was: {} ... now getting the info", response.status)
-        client.get("/api/1.1/rest/number/12133426857.json").as[PhoneNumber] onComplete {
-          case Success(phoneNumber) => {
-            logger.info("The phoen number is {}", phoneNumber)
-            client.shutdown()
+        logger.info("Response for Order: {}", response.entity)
+        println("Pop in that number you just ordered: ")
+        val number = readLine()
+        client.put(s"/api/1.1/rest/number/$number.json", Some(Map(
+          "CallFeature" -> "ENABLED",
+          "TextFeature" -> "DISABLED",
+          "InboundCallConfigurationType" -> "IVR",
+          "DialplanXml" -> dialplan,
+          "Number" -> number)
+        )) onComplete {
+          case Success(response) => {
+            logger.info("Response was: {} ... now getting the info", response.status)
+            client.get(s"/api/1.1/rest/number/$number.json").as[PhoneNumber] onComplete {
+              case Success(phoneNumber) => {
+                logger.info("The phone number is {}", phoneNumber)
+                println(s"YOUR PHONE NUMBER ${phoneNumber.nationalFormat} IS NOT READY TO USE! Call it, foo!")
+                client.shutdown()
+              }
+              case Failure(error) => {
+                error match {
+                  case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
+                  case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
+                }
+                client.shutdown()
+              }
+            }
           }
           case Failure(error) => {
             error match {
@@ -136,16 +164,41 @@ object Main extends Logging {
               case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
             }
             client.shutdown()
-          }
         }
-      }
-      case Failure(error) => {
-        error match {
-          case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
-          case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
-        }
-        client.shutdown()
       }
     }
+    }
   }
-}
+
+//    client.put("/api/1.1/rest/number/12133426857.json", Some(Map(
+//      "CallFeature" -> "ENABLED",
+//      "TextFeature" -> "DISABLED",
+//      "InboundCallConfigurationType" -> "IVR",
+//      "DialplanXml" -> dialplan,
+//      "Number" -> "12133426857")
+//    )) onComplete {
+//      case Success(response) => {
+//        logger.info("Response was: {} ... now getting the info", response.status)
+//        client.get("/api/1.1/rest/number/12133426857.json").as[PhoneNumber] onComplete {
+//          case Success(phoneNumber) => {
+//            logger.info("The phoen number is {}", phoneNumber)
+//            client.shutdown()
+//          }
+//          case Failure(error) => {
+//            error match {
+//              case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
+//              case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
+//            }
+//            client.shutdown()
+//          }
+//        }
+//      }
+//      case Failure(error) => {
+//        error match {
+//          case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
+//          case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
+//        }
+//        client.shutdown()
+//      }
+//    }
+  }
