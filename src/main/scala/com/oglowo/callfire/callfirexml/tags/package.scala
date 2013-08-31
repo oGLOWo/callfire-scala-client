@@ -12,23 +12,23 @@ package object tags {
                                 override val minimizeEmpty: Boolean = false,
                                 val body: Seq[Node] = Seq.empty) extends Elem(tagPrefix.orNull, label, metadata(tagAttributes), scope, minimizeEmpty, body:_*)
 
-//  case class DialPlan(override val name: Option[String] = None, loggingEnabled: Boolean = true, override val body: Seq[CallFireXmlTag])
-//    extends CallFireXmlTag(name = name,
-//      label = "dialplan",
-//      tagAttributes = Map("name" -> name, "loggingEnabled" -> loggingEnabled),
-//      body = body)
-//
-//  case class GotoXml(override val name: Option[String] = None, uri: Uri)
-//    extends CallFireXmlTag(name = name,
-//      label = "gotoXML",
-//      tagAttributes = Map("name" -> name),
-//      body = Seq(Text(uri.toString)))
+  case class DialPlan(override val name: Option[String] = None, loggingEnabled: Boolean = true, override val body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(name = name,
+      label = "dialplan",
+      tagAttributes = Map("name" -> name, "loggingEnabled" -> loggingEnabled),
+      body = body)
 
-//  case class Menu(override val name: Option[String] = None, timeout: Option[Int] = None, maxDigits: Option[Int] = None, body: Seq[CallFireXmlTag])
-//    extends CallFireXmlTag(name = name,
-//      label = "menu",
-//      tagAttributes = Map("name" -> name, "timeout" -> timeout, "maxDigits" -> maxDigits),
-//      body = body)
+  case class GotoXml(override val name: Option[String] = None, uri: Uri)
+    extends CallFireXmlTag(name = name,
+      label = "gotoXML",
+      tagAttributes = Map("name" -> name),
+      body = Seq(Text(uri.toString)))
+
+  case class Menu(override val name: Option[String] = None, timeout: Option[Int] = None, maxDigits: Option[Int] = None, body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(name = name,
+      label = "menu",
+      tagAttributes = Map("name" -> name, "timeout" -> timeout, "maxDigits" -> maxDigits),
+      body = body)
 
   sealed trait PlayType {
     val value: String
@@ -59,5 +59,4 @@ package object tags {
 //      label = "play",
 //      tagAttributes = Map("name" -> name, "type" -> playType, "voice" -> voice, "cache" -> cache),
 //      )
-
 }

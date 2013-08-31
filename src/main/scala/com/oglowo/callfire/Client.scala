@@ -97,10 +97,10 @@ trait Client {
 
 object Main extends Logging {
   def main(args: Array[String]) {
-    //    val path = args(0)
-    //    logger.info("Requesting path {}", path)
-    val set = Set(3)
-    set.nonEmpty
+    val prefix = args(0)
+    val count = args(1)
+    val purchaseCount = args(2)
+
 
     val client = new Client with ProductionClientConnection
     import client._
@@ -119,9 +119,9 @@ object Main extends Logging {
                      |</dialplan>
                      | """.stripMargin('|')
 
-    client.post("/api/1.1/rest/number/order.json", Some(Map(
-      "localCount" -> "1",
-      "tollFreeCount" -> "1"
+    client.post("/api/1.1/rest/number/search.json", Some(Map(
+      "prefix" -> prefix,
+      "count" -> count
     ))) onComplete {
       case Failure(error) => {
         error match {
@@ -131,7 +131,7 @@ object Main extends Logging {
         client.shutdown()
       }
       case Success(response) => {
-        logger.info("Response for Order: {}", response.entity)
+        logger.info("Response for Number Search: {}", response.entity)
         println("Pop in that number you just ordered: ")
         val number = readLine()
         client.put(s"/api/1.1/rest/number/$number.json", Some(Map(
