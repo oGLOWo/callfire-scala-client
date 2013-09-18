@@ -24,7 +24,7 @@ package object tags {
       tagAttributes = Map("name" -> name),
       body = Seq(Text(uri.toString)))
 
-  case class Menu(override val name: Option[String] = None, timeout: Option[Int] = None, maxDigits: Option[Int] = None, body: Seq[CallFireXmlTag])
+  case class Menu(override val name: Option[String] = None, timeout: Option[Int] = None, maxDigits: Option[Int] = None, override val body: Seq[CallFireXmlTag])
     extends CallFireXmlTag(name = name,
       label = "menu",
       tagAttributes = Map("name" -> name, "timeout" -> timeout, "maxDigits" -> maxDigits),

@@ -106,10 +106,10 @@ object Main extends Logging {
     import client._
     val dialplan = """<dialplan name="Root">
                      |	<menu name="main_menu" maxDigits="1" timeout="3500">
-                     |		<play type="tts" voice="female2">Hey! Press 1 if you want me to tell you off. Press 2 if you want me to transfer you to Adrian or Daniel</play>
+                     |		<play type="tts" voice="female2">Hey! Press 1 if you want me to tell you off. Press 2 if you want me to transfer you to Latte or Daniel</play>
                      |		<keypress pressed="2">
-                     |			<transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" whisper-tts="Penis penis penis">
-                     |        12134485916,13107738288
+                     |			<transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" screen="true" whisper-tts="yyyyYo yo yo press 1 if you want to take this here call, son!">
+                     |        12132228559,13107738288
                      |      </transfer>
                      |		</keypress>
                      |		<keypress pressed="1">
@@ -119,19 +119,6 @@ object Main extends Logging {
                      |</dialplan>
                      | """.stripMargin('|')
 
-    client.post("/api/1.1/rest/number/search.json", Some(Map(
-      "prefix" -> prefix,
-      "count" -> count
-    ))) onComplete {
-      case Failure(error) => {
-        error match {
-          case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
-          case e: Throwable => logger.error("NON API ERROR!", e)
-        }
-        client.shutdown()
-      }
-      case Success(response) => {
-        logger.info("Response for Number Search: {}", response.entity)
         println("Pop in that number you just ordered: ")
         val number = readLine()
         client.put(s"/api/1.1/rest/number/$number.json", Some(Map(
@@ -146,7 +133,7 @@ object Main extends Logging {
             client.get(s"/api/1.1/rest/number/$number.json").as[PhoneNumber] onComplete {
               case Success(phoneNumber) => {
                 logger.info("The phone number is {}", phoneNumber)
-                println(s"YOUR PHONE NUMBER ${phoneNumber.nationalFormat} IS NOT READY TO USE! Call it, foo!")
+                println(s"YOUR PHONE NUMBER ${phoneNumber.nationalFormat} IS NOW READY TO USE! Call it, foo!")
                 client.shutdown()
               }
               case Failure(error) => {
@@ -167,8 +154,6 @@ object Main extends Logging {
         }
       }
     }
-    }
-  }
 
 //    client.put("/api/1.1/rest/number/12133426857.json", Some(Map(
 //      "CallFeature" -> "ENABLED",

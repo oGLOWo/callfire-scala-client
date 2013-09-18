@@ -6,7 +6,6 @@ import com.oglowo.callfire.entity.ApiError
 import com.oglowo.callfire.entity.PhoneNumber
 import com.github.nscala_time.time.Imports._
 import scala.xml.{XML, NodeSeq}
-import scala.collection.immutable.Seq
 import scala.Seq
 import scala.util.parsing.json.JSONObject
 import spray.http.Uri
@@ -226,26 +225,26 @@ object ApiEntityFormats extends DefaultJsonProtocol {
     }
   }
 
-  implicit val OrderReferenceFormat = new RootJsonFormat[OrderReference] {
-    def write(obj: OrderReference): JsValue = ???
+//  implicit val OrderReferenceFormat = new RootJsonFormat[OrderReference] {
+//    def write(obj: OrderReference): JsValue = ???
+//
+//    def read(json: JsValue): OrderReference = json match {
+//      case responseJson: JsObject => {
+//        responseJson.getFields(OrderReference.)
+//        referenceJson.getFields("Id", "Location") match {
+//          case Seq(JsNumber(id), JsString(location)) => OrderReference(id.toLong, Uri(location))
+//          case _ => deserializationError("Failure deserializing order ResourceReference because required fields Id and Location were not all present")
+//        }
+//      }
+//      case _ => deserializationError(s"Expecting that the response would be a json object, but it wasn't ... it was ${json.getClass}")
+//    }
+//  }
 
-    def read(json: JsValue): OrderReference = json match {
-      case responseJson: JsObject => {
-        responseJson.getFields(OrderReference.)
-        referenceJson.getFields("Id", "Location") match {
-          case Seq(JsNumber(id), JsString(location)) => OrderReference(id.toLong, Uri(location))
-          case _ => deserializationError("Failure deserializing order ResourceReference because required fields Id and Location were not all present")
-        }
-      }
-      case _ => deserializationError(s"Expecting that the response would be a json object, but it wasn't ... it was ${json.getClass}")
-    }
-  }
-
-  implicit val SearchNumbersResultFormat = new RootJsonFormat[SearchNumbersResult] {
-    def write(obj: SearchNumbersResult): JsValue = ???
-
-    def read(json: JsValue): SearchNumbersResult = json match {
-      case listObject: JsonObject
-    }
-  }
+//  implicit val SearchNumbersResultFormat = new RootJsonFormat[SearchNumbersResult] {
+//    def write(obj: SearchNumbersResult): JsValue = ???
+//
+//    def read(json: JsValue): SearchNumbersResult = json match {
+//      case listObject: JsonObject
+//    }
+//  }
 }
