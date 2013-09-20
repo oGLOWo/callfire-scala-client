@@ -225,6 +225,46 @@ object ApiEntityFormats extends DefaultJsonProtocol {
     }
   }
 
+  implicit val PhoneNumberSeqFormat = new RootJsonFormat[Seq[PhoneNumber]] {
+    def write(obj: Seq[PhoneNumber]): JsValue = ???
+    def read(json: JsValue): Seq[PhoneNumber] = json match {
+      case jsonResponse: JsObject => {
+        val resourceListJson = jsonResponse.getFields("ResourceList").head.asJsObject
+        resourceListJson.getFields("Number").head match {
+          case JsArray(elements) => {
+            elements.map(_.asJsObject).map(entityJson => {
+              val fields = entityJson.getFields("Number", "NationalFormat", "TollFree")
+              fields match {
+                case Seq(JsNumber(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
+                  val region: Option[Region] = entityJson.fields.get("Region") match {
+                    case Some(regionJson) => Option(regionJson.convertTo[Region])
+                    case _ => None
+                  }
+                  val status: Option[PhoneNumberStatus] = entityJson.fields.get("Status") match {
+                    case Some(JsString(value)) => Option(PhoneNumberStatus.withName(value))
+                    case _ => None
+                  }
+                  val lease: Option[Lease] = entityJson.fields.get("LeaseInfo") match {
+                    case Some(leaseJson) => Option(leaseJson.convertTo[Lease])
+                    case _ => None
+                  }
+                  val numberConfiguration: Option[PhoneNumberConfiguration] = entityJson.fields.get("NumberConfiguration") match {
+                    case Some(numberConfigurationJson) => Option(numberConfigurationJson.convertTo[PhoneNumberConfiguration])
+                    case _ => None
+                  }
+                  PhoneNumber(number.toLong, nationalFormat, tollFree, region, status, lease, numberConfiguration)
+                }
+                case _ => deserializationError("Failure deserializing PhoneNumber because required fields Number, NationalFormat, and TollFree were not all present")
+              }
+            }).toSeq
+          }
+          case _ => deserializationError("Exepecting JSON array")
+        }
+      }
+      case _ => deserializationError("Expecting JSON object")
+    }
+  }
+
 //  implicit val OrderReferenceFormat = new RootJsonFormat[OrderReference] {
 //    def write(obj: OrderReference): JsValue = ???
 //
