@@ -5,10 +5,8 @@ import com.oglowo.callfire.entity._
 import com.oglowo.callfire.entity.ApiError
 import com.oglowo.callfire.entity.PhoneNumber
 import com.github.nscala_time.time.Imports._
-import scala.xml.{XML, NodeSeq}
+import scala.xml.XML
 import scala.Seq
-import scala.util.parsing.json.JSONObject
-import spray.http.Uri
 
 object ApiEntityFormats extends DefaultJsonProtocol {
   val CallFireDateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-ddZ")
@@ -193,33 +191,37 @@ object ApiEntityFormats extends DefaultJsonProtocol {
   implicit val PhoneNumberFormat = new RootJsonFormat[PhoneNumber] {
     def write(obj: PhoneNumber): JsValue = ???
 
+    def parsePhoneNumber(resourceJson: JsObject): PhoneNumber = {
+      val entityJson = resourceJson.getFields("Number").head.asJsObject
+      val fields = entityJson.getFields("Number", "NationalFormat", "TollFree")
+      fields match {
+        case Seq(JsNumber(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
+          val region: Option[Region] = entityJson.fields.get("Region") match {
+            case Some(regionJson) => Option(regionJson.convertTo[Region])
+            case _ => None
+          }
+          val status: Option[PhoneNumberStatus] = entityJson.fields.get("Status") match {
+            case Some(JsString(value)) => Option(PhoneNumberStatus.withName(value))
+            case _ => None
+          }
+          val lease: Option[Lease] = entityJson.fields.get("LeaseInfo") match {
+            case Some(leaseJson) => Option(leaseJson.convertTo[Lease])
+            case _ => None
+          }
+          val numberConfiguration: Option[PhoneNumberConfiguration] = entityJson.fields.get("NumberConfiguration") match {
+            case Some(numberConfigurationJson) => Option(numberConfigurationJson.convertTo[PhoneNumberConfiguration])
+            case _ => None
+          }
+          PhoneNumber(number.toLong, nationalFormat, tollFree, region, status, lease, numberConfiguration)
+        }
+        case _ => deserializationError("Failure deserializing PhoneNumber because required fields Number, NationalFormat, and TollFree were not all present")
+      }
+    }
+
     def read(json: JsValue): PhoneNumber = json match {
       case jsonResponse: JsObject => {
         val resourceJson = jsonResponse.getFields("Resource").head.asJsObject
-        val entityJson = resourceJson.getFields("Number").head.asJsObject
-        val fields = entityJson.getFields("Number", "NationalFormat", "TollFree")
-        fields match {
-          case Seq(JsNumber(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
-            val region: Option[Region] = entityJson.fields.get("Region") match {
-              case Some(regionJson) => Option(regionJson.convertTo[Region])
-              case _ => None
-            }
-            val status: Option[PhoneNumberStatus] = entityJson.fields.get("Status") match {
-              case Some(JsString(value)) => Option(PhoneNumberStatus.withName(value))
-              case _ => None
-            }
-            val lease: Option[Lease] = entityJson.fields.get("LeaseInfo") match {
-              case Some(leaseJson) => Option(leaseJson.convertTo[Lease])
-              case _ => None
-            }
-            val numberConfiguration: Option[PhoneNumberConfiguration] = entityJson.fields.get("NumberConfiguration") match {
-              case Some(numberConfigurationJson) => Option(numberConfigurationJson.convertTo[PhoneNumberConfiguration])
-              case _ => None
-            }
-            PhoneNumber(number.toLong, nationalFormat, tollFree, region, status, lease, numberConfiguration)
-          }
-          case _ => deserializationError("Failure deserializing PhoneNumber because required fields Number, NationalFormat, and TollFree were not all present")
-        }
+        parsePhoneNumber(resourceJson)
       }
       case _ => deserializationError("Expecting JSON object")
     }
@@ -227,38 +229,73 @@ object ApiEntityFormats extends DefaultJsonProtocol {
 
   implicit val PhoneNumberSeqFormat = new RootJsonFormat[Seq[PhoneNumber]] {
     def write(obj: Seq[PhoneNumber]): JsValue = ???
+
+    def parsePhoneNumbers(resourceJson: JsObject): Seq[PhoneNumber] = {
+      resourceJson.getFields("Number").head match {
+        case JsArray(elements) => {
+          elements.map(_.asJsObject).map(entityJson => {
+            val fields = entityJson.getFields("Number", "NationalFormat", "TollFree")
+            fields match {
+              case Seq(JsNumber(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
+                val region: Option[Region] = entityJson.fields.get("Region") match {
+                  case Some(regionJson) => Option(regionJson.convertTo[Region])
+                  case _ => None
+                }
+                val status: Option[PhoneNumberStatus] = entityJson.fields.get("Status") match {
+                  case Some(JsString(value)) => Option(PhoneNumberStatus.withName(value))
+                  case _ => None
+                }
+                val lease: Option[Lease] = entityJson.fields.get("LeaseInfo") match {
+                  case Some(leaseJson) => Option(leaseJson.convertTo[Lease])
+                  case _ => None
+                }
+                val numberConfiguration: Option[PhoneNumberConfiguration] = entityJson.fields.get("NumberConfiguration") match {
+                  case Some(numberConfigurationJson) => Option(numberConfigurationJson.convertTo[PhoneNumberConfiguration])
+                  case _ => None
+                }
+                PhoneNumber(number.toLong, nationalFormat, tollFree, region, status, lease, numberConfiguration)
+              }
+              case _ => deserializationError("Failure deserializing PhoneNumber because required fields Number, NationalFormat, and TollFree were not all present")
+            }
+          }).toSeq
+        }
+        case numberJson: JsObject => {
+          numberJson.getFields("Number", "NationalFormat", "TollFree") match {
+            case Seq(JsNumber(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
+              val region: Option[Region] = numberJson.fields.get("Region") match {
+                case Some(regionJson) => Option(regionJson.convertTo[Region])
+                case _ => None
+              }
+              val status: Option[PhoneNumberStatus] = numberJson.fields.get("Status") match {
+                case Some(JsString(value)) => Option(PhoneNumberStatus.withName(value))
+                case _ => None
+              }
+              val lease: Option[Lease] = numberJson.fields.get("LeaseInfo") match {
+                case Some(leaseJson) => Option(leaseJson.convertTo[Lease])
+                case _ => None
+              }
+              val numberConfiguration: Option[PhoneNumberConfiguration] = numberJson.fields.get("NumberConfiguration") match {
+                case Some(numberConfigurationJson) => Option(numberConfigurationJson.convertTo[PhoneNumberConfiguration])
+                case _ => None
+              }
+              Seq(PhoneNumber(number.toLong, nationalFormat, tollFree, region, status, lease, numberConfiguration))
+            }
+            case _ => deserializationError("Failure deserializing PhoneNumber because required fields Number, NationalFormat, and TollFree were not all present")
+          }
+        }
+        case _ => deserializationError("Exepecting JSON array or JSON object (for single result)")
+      }
+    }
+
     def read(json: JsValue): Seq[PhoneNumber] = json match {
       case jsonResponse: JsObject => {
         val resourceListJson = jsonResponse.getFields("ResourceList").head.asJsObject
-        resourceListJson.getFields("Number").head match {
-          case JsArray(elements) => {
-            elements.map(_.asJsObject).map(entityJson => {
-              val fields = entityJson.getFields("Number", "NationalFormat", "TollFree")
-              fields match {
-                case Seq(JsNumber(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
-                  val region: Option[Region] = entityJson.fields.get("Region") match {
-                    case Some(regionJson) => Option(regionJson.convertTo[Region])
-                    case _ => None
-                  }
-                  val status: Option[PhoneNumberStatus] = entityJson.fields.get("Status") match {
-                    case Some(JsString(value)) => Option(PhoneNumberStatus.withName(value))
-                    case _ => None
-                  }
-                  val lease: Option[Lease] = entityJson.fields.get("LeaseInfo") match {
-                    case Some(leaseJson) => Option(leaseJson.convertTo[Lease])
-                    case _ => None
-                  }
-                  val numberConfiguration: Option[PhoneNumberConfiguration] = entityJson.fields.get("NumberConfiguration") match {
-                    case Some(numberConfigurationJson) => Option(numberConfigurationJson.convertTo[PhoneNumberConfiguration])
-                    case _ => None
-                  }
-                  PhoneNumber(number.toLong, nationalFormat, tollFree, region, status, lease, numberConfiguration)
-                }
-                case _ => deserializationError("Failure deserializing PhoneNumber because required fields Number, NationalFormat, and TollFree were not all present")
-              }
-            }).toSeq
+        resourceListJson.getFields("@totalResults").head match {
+          case JsString(totalResultsString) => {
+            val totalResults = totalResultsString.toInt
+            if (totalResults <= 0) Seq.empty[PhoneNumber] else parsePhoneNumbers(resourceListJson)
           }
-          case _ => deserializationError("Exepecting JSON array")
+          case _ => deserializationError("@totalResults was not a JSON number")
         }
       }
       case _ => deserializationError("Expecting JSON object")
