@@ -7,6 +7,7 @@ import com.oglowo.callfire.entity.PhoneNumber
 import com.github.nscala_time.time.Imports._
 import scala.xml.XML
 import scala.Seq
+import spray.http.Uri
 
 object ApiEntityFormats extends DefaultJsonProtocol {
   val CallFireDateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-ddZ")
@@ -302,20 +303,70 @@ object ApiEntityFormats extends DefaultJsonProtocol {
     }
   }
 
-//  implicit val OrderReferenceFormat = new RootJsonFormat[OrderReference] {
-//    def write(obj: OrderReference): JsValue = ???
-//
-//    def read(json: JsValue): OrderReference = json match {
-//      case responseJson: JsObject => {
-//        responseJson.getFields(OrderReference.)
-//        referenceJson.getFields("Id", "Location") match {
-//          case Seq(JsNumber(id), JsString(location)) => OrderReference(id.toLong, Uri(location))
-//          case _ => deserializationError("Failure deserializing order ResourceReference because required fields Id and Location were not all present")
-//        }
-//      }
-//      case _ => deserializationError(s"Expecting that the response would be a json object, but it wasn't ... it was ${json.getClass}")
-//    }
-//  }
+  implicit val OrderReferenceFormat = new RootJsonFormat[OrderReference] {
+    def write(obj: OrderReference): JsValue = ???
+
+    def read(json: JsValue): OrderReference = json match {
+      case responseJson: JsObject => {
+        responseJson.fields.get("ResourceReference") match {
+          case Some(reference) => {
+            reference match {
+              case referenceJson: JsObject => {
+                referenceJson.getFields("Id", "Location") match {
+                  case Seq(JsNumber(id), JsString(location)) => OrderReference(id.toLong, Uri(location))
+                  case _ => deserializationError("Failure deserializing order ResourceReference because required fields Id and Location were not all present")
+                }
+              }
+              case default => deserializationError(s"Failed to deserialize ResourceReference. Exepecting JsObject, but got ${default.getClass}")
+            }
+          }
+          case None => deserializationError("Failure deserializing OrderReference because there was no field ResourceReference that was present")
+        }
+      }
+      case _ => deserializationError(s"Expecting that the response would be a json object, but it wasn't ... it was ${json.getClass}")
+    }
+  }
+
+  implicit val OrderFormat = new RootJsonFormat[Order] {
+    def write(obj: Order): JsValue = ???
+
+    def read(json: JsValue): Order = json match {
+      case JsObject(fields) => {
+        fields.get("Resource") match {
+          case Some(resource) => {
+            resource match {
+              case JsObject(resourceJson) => {
+                resourceJson.get("NumberOrder") match {
+                  case Some(order) => {
+                    order match {
+                      case orderJson: JsObject => {
+                        orderJson.getFields("@id", "Status", "Created", "TotalCost") match {
+                          case Seq(JsString(id), JsString(status), JsString(createdOn), JsNumber(totalCost)) => {
+                            val maybeLocalNumbers: Option[OrderItem[PhoneNumber]] = orderJson.fields.get("LocalNumbers") match {
+                              case JsObject(localNumbersFields) => {
+                                localNumbersFields
+                              }
+                              case default => deserializationError(s"Expecting 'LocalNumbers' to be a json object, but got ${default.getClass}")
+                            }
+                          }
+                          case _ => deserializationError("Failed to get required fields '@id, Status, Created, and TotalCost'")
+                        }
+                      }
+                      case _ => deserializationError(s"Expecting 'NumberOrder' to be json object, but got ${order.getClass}")
+                    }
+                  }
+                  case _ => deserializationError("Failed to get required field 'NumberOrder'")
+                }
+              }
+              case _ => deserializationError(s"Expecting 'Resource' to be a json object, but was ${resource.getClass}")
+            }
+          }
+          case _ => deserializationError("Failed to get required field 'Resource'")
+        }
+      }
+      case _ => deserializationError(s"Expecting that the response woudl be a json object, but it was ${json.getClass}")
+    }
+  }
 
 //  implicit val SearchNumbersResultFormat = new RootJsonFormat[SearchNumbersResult] {
 //    def write(obj: SearchNumbersResult): JsValue = ???

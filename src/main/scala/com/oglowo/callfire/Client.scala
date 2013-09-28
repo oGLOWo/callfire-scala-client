@@ -12,7 +12,7 @@ import spray.can.Http
 import spray.client.pipelining._
 import spray.util._
 import scala.concurrent.duration._
-import com.oglowo.callfire.entity.{ApiError, PhoneNumber}
+import com.oglowo.callfire.entity.{OrderReference, ApiError, PhoneNumber}
 import com.oglowo.callfire.json.ApiEntityFormats._
 import akka.event.Logging
 import com.typesafe.scalalogging.log4j.Logging
@@ -21,9 +21,14 @@ import spray.http.HttpHeaders._
 import pimps._
 import scalaz._
 import Scalaz._
+import com.oglowo.callfire.Imports._
+
 
 trait Client {
   this: ClientConnection =>
+
+  val ApiBase = "/api/1.1/rest"
+
   lazy val log = Logging(system, getClass)
 
   //  def logRequest(log: LoggingAdapter): HttpRequest ⇒ HttpRequest =
@@ -40,53 +45,82 @@ trait Client {
       ~> decode(Gzip)
     )
 
+  private def constructPath(path: String): String = {
+    val base = if (ApiBase.endsWith("/")) ApiBase.stripSuffix("/") else ApiBase |>
+      { s => if (s.startsWith("/")) s else "/" + s }
+    s"$base/$path"
+  }
+
   def get(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    val endpoint = constructPath(path)
     maybeParameters match {
-      case Some(parameters) => Get(path, FormData(parameters))
-      case None => Get(path)
+      case Some(parameters) => Get(endpoint, FormData(parameters))
+      case None => Get(endpoint)
     }
   }
 
   def post(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    val endpoint = constructPath(path)
     maybeParameters match {
-      case Some(parameters) => Post(path, FormData(parameters))
-      case None => Post(path)
+      case Some(parameters) => Post(endpoint, FormData(parameters))
+      case None => Post(endpoint)
     }
   }
 
   def put(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    val endpoint = constructPath(path)
     maybeParameters match {
-      case Some(parameters) => Put(path, FormData(parameters))
-      case None => Put(path)
+      case Some(parameters) => Put(endpoint, FormData(parameters))
+      case None => Put(endpoint)
     }
   }
 
   def patch(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    val endpoint = constructPath(path)
     maybeParameters match {
-      case Some(parameters) => Patch(path, FormData(parameters))
-      case None => Patch(path)
+      case Some(parameters) => Patch(endpoint, FormData(parameters))
+      case None => Patch(endpoint)
     }
   }
 
   def delete(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    val endpoint = constructPath(path)
     maybeParameters match {
-      case Some(parameters) => Delete(path, FormData(parameters))
-      case None => Delete(path)
+      case Some(parameters) => Delete(endpoint, FormData(parameters))
+      case None => Delete(endpoint)
     }
   }
 
   def head(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    val endpoint = constructPath(path)
     maybeParameters match {
-      case Some(parameters) => Head(path, FormData(parameters))
-      case None => Head(path)
+      case Some(parameters) => Head(endpoint, FormData(parameters))
+      case None => Head(endpoint)
     }
   }
 
   def options(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
+    val endpoint = constructPath(path)
     maybeParameters match {
-      case Some(parameters) => Options(path, FormData(parameters))
-      case None => Options(path)
+      case Some(parameters) => Options(endpoint, FormData(parameters))
+      case None => Options(endpoint)
     }
+  }
+
+  def orderNumbers(numbers: Set[PhoneNumber]): Future[OrderReference] = {
+    val parameters = Map("Numbers" -> numbers.map(_.number.toString).mkString(","))
+    post("/number/order.json", parameters.some).as[OrderReference]
+  }
+
+  def getOrder(orderReference: OrderReference): Future[entity.Order] = {
+    get(s"/number/order/${orderReference.id}").as[entity.Order]
+  }
+
+  def searchForNumbers(prefix: Option[Min4DigitInt], city: Option[String], maxNumbers: Int = 1): Future[Seq[PhoneNumber]] = {
+    val parameters = Map("Count" -> maxNumbers.toString) |>
+      { m => if (prefix.isDefined) m + ("Prefix" -> prefix.get.toString) else m } |>
+      { m => if (city.isDefined) m + ("City" -> city.get.toString) else m }
+    get("/number/search.json", parameters.some).as[Seq[PhoneNumber]]
   }
 
   def shutdown(): Unit = {
@@ -104,14 +138,25 @@ object Main extends Logging {
     val client = new Client with ProductionClientConnection
     import client._
 
-    client.get("/api/1.1/rest/number/search.json", Some(Map(
-      "Prefix" -> prefix,
-      "City" -> city,
-      "Count" -> count
-    ))).as[Seq[PhoneNumber]] onComplete {
+    searchForNumbers(implicitly[Min4DigitInt](prefix.toInt).some, city.some, count.toInt) onComplete {
       case Success(response) => {
         response.foreach(println)
-        client.shutdown()
+        print("Number you want to order: ")
+        val numberToOrder = readLine()
+        println("\n....====== ORDERING ======")
+        orderNumbers(Set(PhoneNumber(numberToOrder))) onComplete {
+          case Success(orderReference) => {
+            println(s"!!! ORDER PLACED: $orderReference !!!")
+            client.shutdown()
+          }
+          case Failure(error) => {
+            error match {
+              case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
+              case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
+            }
+            client.shutdown()
+          }
+        }
       }
       case Failure(error) => {
         error match {

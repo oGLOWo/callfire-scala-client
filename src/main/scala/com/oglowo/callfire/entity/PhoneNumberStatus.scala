@@ -1,26 +1,13 @@
 package com.oglowo.callfire.entity
 
-sealed trait PhoneNumberStatus {
-  def value: String
-}
-object PhoneNumberStatus {
-  val values: Seq[PhoneNumberStatus] = Seq(PendingPhoneNumberStatus, ActivePhoneNumberStatus, ReleasedPhoneNumberStatus, UnavailablePhoneNumberStatus)
+import com.oglowo.callfire.{BetterEnumerationCompanion, BetterEnumeration}
 
-  def withName(name: String): PhoneNumberStatus = values.find(_.value == name).get
+sealed trait PhoneNumberStatus extends BetterEnumeration
+object PhoneNumberStatus extends BetterEnumerationCompanion[PhoneNumberStatus] {
+  override val values: Set[PhoneNumberStatus] = Set(PendingPhoneNumberStatus, ActivePhoneNumberStatus, ReleasedPhoneNumberStatus, UnavailablePhoneNumberStatus)
 }
 
-case object PendingPhoneNumberStatus extends PhoneNumberStatus {
-  def value = "PENDING"
-}
-
-case object ActivePhoneNumberStatus extends PhoneNumberStatus {
-  def value = "ACTIVE"
-}
-
-case object ReleasedPhoneNumberStatus extends PhoneNumberStatus {
-  def value = "RELEASED"
-}
-
-case object UnavailablePhoneNumberStatus extends PhoneNumberStatus {
-  def value = "UNAVAILABLE"
-}
+case object PendingPhoneNumberStatus extends PhoneNumberStatus { override def name = "PENDING" }
+case object ActivePhoneNumberStatus extends PhoneNumberStatus { override def name = "ACTIVE" }
+case object ReleasedPhoneNumberStatus extends PhoneNumberStatus { override def name = "RELEASED" }
+case object UnavailablePhoneNumberStatus extends PhoneNumberStatus { override def name = "UNAVAILABLE" }

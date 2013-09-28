@@ -10,7 +10,7 @@ scalaVersion := "2.10.1"
 
 version := "0.1"
 
-scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8")
+scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8", "-language:postfixOps", "-language:implicitConversions", "-Xlint")
 
 scalacOptions in Test ++= Seq("-Yrangepos")
 
@@ -34,5 +34,6 @@ libraryDependencies ++= Seq(
   "com.typesafe"              %%  "scalalogging-log4j"  %  "1.0.1",
   "com.github.nscala-time"    %%  "nscala-time"         %  "0.4.2",
   "org.apache.logging.log4j"  %  "log4j-api"            %  "2.0-beta8",
-  "org.apache.logging.log4j"  %  "log4j-core"           %  "2.0-beta8"
+  "org.apache.logging.log4j"  %  "log4j-core"           %  "2.0-beta8",
+  "org.joda"                  %  "joda-money"           %  "0.9"
 )
