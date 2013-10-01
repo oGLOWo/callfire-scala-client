@@ -8,9 +8,13 @@ import com.github.nscala_time.time.Imports._
 import scala.xml.XML
 import scala.Seq
 import spray.http.Uri
+import com.oglowo.callfire.Imports._
+import org.joda.time.format.ISODateTimeFormat
+import org.joda.money.{CurrencyUnit, Money}
 
 object ApiEntityFormats extends DefaultJsonProtocol {
   val CallFireDateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-ddZ")
+  val CallFireIsoDateTimeFormatter = ISODateTimeFormat.dateTimeNoMillis
 
   implicit val ApiErrorFormat = new RootJsonFormat[ApiError] {
     def write(obj: ApiError): JsValue = ???
@@ -343,11 +347,76 @@ object ApiEntityFormats extends DefaultJsonProtocol {
                         orderJson.getFields("@id", "Status", "Created", "TotalCost") match {
                           case Seq(JsString(id), JsString(status), JsString(createdOn), JsNumber(totalCost)) => {
                             val maybeLocalNumbers: Option[OrderItem[PhoneNumber]] = orderJson.fields.get("LocalNumbers") match {
-                              case JsObject(localNumbersFields) => {
-                                localNumbersFields
+                              case Some(localNumbersValue) => localNumbersValue match {
+                                case localNumbersJson: JsObject => {
+                                  localNumbersJson.getFields("Ordered", "UnitCost") match {
+                                    case Seq(JsNumber(quantity), JsNumber(itemCost)) => {
+                                      val fulfilled: Seq[PhoneNumber] = localNumbersJson.fields.get("Fulfilled") match {
+                                        case Some(itemsJson) => itemsJson match {
+                                          case JsString(itemsFulfilled) => {
+                                            itemsFulfilled.split(" ").map(item => PhoneNumber(item)).toSeq
+                                          }
+                                          case _ => deserializationError(s"Expecting 'Fulfilled' to be json string, but got ${itemsJson.getClass}")
+                                        }
+                                        case None => List.empty
+                                      }
+                                      Some(OrderItem[PhoneNumber](quantity.toInt, Money.of(CurrencyUnit.USD, itemCost.bigDecimal), fulfilled))
+                                    }
+                                    case _ => deserializationError("Ordered and UnitCost are required, but were not present in the 'LocalNumbers' json")
+                                  }
+                                }
+                                case _ => deserializationError(s"Expecting 'LocalNumbers' to be a json object, but got ${localNumbersValue.getClass}")
                               }
-                              case default => deserializationError(s"Expecting 'LocalNumbers' to be a json object, but got ${default.getClass}")
+                              case None => None
                             }
+                            val maybeTollFreeNumbers: Option[OrderItem[PhoneNumber]] = orderJson.fields.get("TollFreeNumbers") match {
+                              case Some(tollfreeNumbersValue) => tollfreeNumbersValue match {
+                                case tollfreeNumbersJson: JsObject => {
+                                  tollfreeNumbersJson.getFields("Ordered", "UnitCost") match {
+                                    case Seq(JsNumber(quantity), JsNumber(itemCost)) => {
+                                      val fulfilled: Seq[PhoneNumber] = tollfreeNumbersJson.fields.get("Fulfilled") match {
+                                        case Some(itemsJson) => itemsJson match {
+                                          case JsString(itemsFulfilled) => {
+                                            itemsFulfilled.split(" ").map(item => PhoneNumber(item)).toSeq
+                                          }
+                                          case _ => deserializationError(s"Expecting 'Fulfilled' to be json string, but got ${itemsJson.getClass}")
+                                        }
+                                        case None => List.empty
+                                      }
+                                      Some(OrderItem[PhoneNumber](quantity.toInt, Money.of(CurrencyUnit.USD, itemCost.bigDecimal), fulfilled))
+                                    }
+                                    case _ => deserializationError("Ordered and UnitCost are required, but were not present in the 'TollFreeNumbers' json")
+                                  }
+                                }
+                                case _ => deserializationError(s"Expecting 'TollFreeNumbers' to be a json object, but got ${tollfreeNumbersValue.getClass}")
+                              }
+                              case None => None
+                            }
+                            val maybeKeywords: Option[OrderItem[Keyword]] = orderJson.fields.get("Keywords") match {
+                              case Some(keywordsValue) => keywordsValue match {
+                                case keywordsJson: JsObject => {
+                                  keywordsJson.getFields("Ordered", "UnitCost") match {
+                                    case Seq(JsNumber(quantity), JsNumber(itemCost)) => {
+                                      val fulfilled: Seq[Keyword] = keywordsJson.fields.get("Fulfilled") match {
+                                        case Some(itemsJson) => itemsJson match {
+                                          case JsString(itemsFulfilled) => {
+                                            itemsFulfilled.split(" ").map(Keyword(_)).toSeq
+                                          }
+                                          case _ => deserializationError(s"Expecting 'Fulfilled' to be json string, but got ${itemsJson.getClass}")
+                                        }
+                                        case None => List.empty
+                                      }
+                                      Some(OrderItem[Keyword](quantity.toInt, Money.of(CurrencyUnit.USD, itemCost.bigDecimal), fulfilled))
+                                    }
+                                    case _ => deserializationError("Ordered and UnitCost are required, but were not present in the 'Keywords' json")
+                                  }
+                                }
+                                case _ => deserializationError(s"Expecting 'Keywords' to be a json object, but got ${keywordsValue.getClass}")
+                              }
+                              case None => None
+                            }
+
+                            Order(id.toLong, OrderStatus.withName(status), CallFireIsoDateTimeFormatter.parseDateTime(createdOn), Money.of(CurrencyUnit.USD, totalCost.bigDecimal), maybeLocalNumbers, maybeTollFreeNumbers, maybeKeywords)
                           }
                           case _ => deserializationError("Failed to get required fields '@id, Status, Created, and TotalCost'")
                         }

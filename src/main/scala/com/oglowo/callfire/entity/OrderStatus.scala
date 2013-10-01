@@ -4,7 +4,7 @@ import com.oglowo.callfire.{BetterEnumerationCompanion, BetterEnumeration}
 
 sealed trait OrderStatus extends BetterEnumeration
 object OrderStatus extends BetterEnumerationCompanion[OrderStatus] {
-  val values: Set[OrderStatus] = Set()
+  val values: Set[OrderStatus] = Set(NewOrderStatus, ProcessingOrderStatus, FinishedOrderStatus, ErroredOrderStatus, VoidOrderStatus)
 }
 
 case object NewOrderStatus extends OrderStatus { override def name = "NEW" }

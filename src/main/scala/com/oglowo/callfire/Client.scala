@@ -48,19 +48,25 @@ trait Client {
   private def constructPath(path: String): String = {
     val base = if (ApiBase.endsWith("/")) ApiBase.stripSuffix("/") else ApiBase |>
       { s => if (s.startsWith("/")) s else "/" + s }
-    s"$base/$path"
+    val trimmedPath = if (path.startsWith("/")) path.stripSuffix("/") else path
+    s"$base/$trimmedPath"
   }
 
   def get(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
     val endpoint = constructPath(path)
     maybeParameters match {
-      case Some(parameters) => Get(endpoint, FormData(parameters))
+      case Some(parameters) => {
+        println(s"Hitting $endpoint with GET and ${FormData(parameters)}")
+        parameters.foreach( (entry) => {println(s"[[[[[${entry._1} = ${entry._2}} ]]]]]]]]]")})
+        Get(endpoint, FormData(parameters))
+      }
       case None => Get(endpoint)
     }
   }
 
   def post(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
     val endpoint = constructPath(path)
+    log.debug(s"Posting $maybeParameters to $path")
     maybeParameters match {
       case Some(parameters) => Post(endpoint, FormData(parameters))
       case None => Post(endpoint)
@@ -109,18 +115,18 @@ trait Client {
 
   def orderNumbers(numbers: Set[PhoneNumber]): Future[OrderReference] = {
     val parameters = Map("Numbers" -> numbers.map(_.number.toString).mkString(","))
-    post("/number/order.json", parameters.some).as[OrderReference]
+    post("number/order.json", parameters.some).as[OrderReference]
   }
 
   def getOrder(orderReference: OrderReference): Future[entity.Order] = {
-    get(s"/number/order/${orderReference.id}").as[entity.Order]
+    get(s"number/order/${orderReference.id}.json").as[entity.Order]
   }
 
   def searchForNumbers(prefix: Option[Min4DigitInt], city: Option[String], maxNumbers: Int = 1): Future[Seq[PhoneNumber]] = {
     val parameters = Map("Count" -> maxNumbers.toString) |>
-      { m => if (prefix.isDefined) m + ("Prefix" -> prefix.get.toString) else m } |>
+      { m => if (prefix.isDefined) m + ("Prefix" -> implicitly[String](prefix.get)) else m } |>
       { m => if (city.isDefined) m + ("City" -> city.get.toString) else m }
-    get("/number/search.json", parameters.some).as[Seq[PhoneNumber]]
+    get("number/search.json", parameters.some).as[Seq[PhoneNumber]]
   }
 
   def shutdown(): Unit = {
@@ -138,25 +144,10 @@ object Main extends Logging {
     val client = new Client with ProductionClientConnection
     import client._
 
-    searchForNumbers(implicitly[Min4DigitInt](prefix.toInt).some, city.some, count.toInt) onComplete {
-      case Success(response) => {
-        response.foreach(println)
-        print("Number you want to order: ")
-        val numberToOrder = readLine()
-        println("\n....====== ORDERING ======")
-        orderNumbers(Set(PhoneNumber(numberToOrder))) onComplete {
-          case Success(orderReference) => {
-            println(s"!!! ORDER PLACED: $orderReference !!!")
-            client.shutdown()
-          }
-          case Failure(error) => {
-            error match {
-              case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
-              case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
-            }
-            client.shutdown()
-          }
-        }
+    client.getOrder(OrderReference(271588001L, Uri("https://www.callfire.com/api/1.1/rest/number/order/271588001"))) onComplete {
+      case Success(order) => {
+        println(order)
+        client.shutdown()
       }
       case Failure(error) => {
         error match {
@@ -166,6 +157,46 @@ object Main extends Logging {
         client.shutdown()
       }
     }
+//    searchForNumbers(implicitly[Min4DigitInt](prefix.toInt).some, city.some, count.toInt) onComplete {
+//      case Success(response) => {
+//        println("!!!!! NUMBERS !!!!!")
+//        response.foreach(println)
+//        println(s"\n....====== ORDERING ======")
+//        orderNumbers(response.toSet) onComplete {
+//          case Success(orderReference) => {
+//            println(s"!!! ORDER PLACED: $orderReference !!! Here is the status of that order:........")
+//            getOrder(orderReference) onComplete {
+//              case Success(order) => {
+//                println(">>>>>> ORDER STATUS <<<<<<<")
+//                println(order)
+//                client.shutdown()
+//              }
+//              case Failure(error) => {
+//                error match {
+//                  case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
+//                  case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
+//                }
+//                client.shutdown()
+//              }
+//            }
+//          }
+//          case Failure(error) => {
+//            error match {
+//              case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
+//              case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
+//            }
+//            client.shutdown()
+//          }
+//        }
+//      }
+//      case Failure(error) => {
+//        error match {
+//          case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
+//          case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
+//        }
+//        client.shutdown()
+//      }
+//    }
   }
 }
 //

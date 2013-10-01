@@ -15,19 +15,19 @@ trait ClassDefinitions {
     require(predicate(underlying))
   }
 
-  class NDigitInt(override val underlying: Int, val numberOfDigits: Int) extends IntWithPrecondition(underlying, _.toString.takeWhile(_ == '0').length == numberOfDigits)
+  class NDigitInt(override val underlying: Int, val numberOfDigits: Int) extends IntWithPrecondition(underlying, _.toString.replaceAll("^0*", "").length == numberOfDigits)
   case class OneDigitInt(override val underlying: Int) extends NDigitInt(underlying, 1)
   case class TwoDigitInt(override val underlying: Int) extends NDigitInt(underlying, 2)
   case class ThreeDigitInt(override val underlying: Int) extends NDigitInt(underlying, 3)
   case class FourDigitInt(override val underlying: Int) extends NDigitInt(underlying, 4)
   case class FiveDigitInt(override val underlying: Int) extends NDigitInt(underlying, 5)
 
-  class MinNDigitInt(override val underlying: Int, val minNumberOfDigits: Int) extends IntWithPrecondition(underlying, _.toString.takeWhile(_ == '0').length >= minNumberOfDigits)
-  case class Min1DigitInt(override val underlying: Int) extends NDigitInt(underlying, 1)
-  case class Min2DigitInt(override val underlying: Int) extends NDigitInt(underlying, 2)
-  case class Min3DigitInt(override val underlying: Int) extends NDigitInt(underlying, 3)
-  case class Min4DigitInt(override val underlying: Int) extends NDigitInt(underlying, 4)
-  case class Min5DigitInt(override val underlying: Int) extends NDigitInt(underlying, 5)
+  class MinNDigitInt(override val underlying: Int, val minNumberOfDigits: Int) extends IntWithPrecondition(underlying, _.toString.replaceAll("^0*", "").length >= minNumberOfDigits)
+  case class Min1DigitInt(override val underlying: Int) extends MinNDigitInt(underlying, 1)
+  case class Min2DigitInt(override val underlying: Int) extends MinNDigitInt(underlying, 2)
+  case class Min3DigitInt(override val underlying: Int) extends MinNDigitInt(underlying, 3)
+  case class Min4DigitInt(override val underlying: Int) extends MinNDigitInt(underlying, 4)
+  case class Min5DigitInt(override val underlying: Int) extends MinNDigitInt(underlying, 5)
 
   class StringN(override val underlying: String, val length: Int) extends StringWithPrecondition(underlying, _.length == length)
   case class String1(override val underlying: String) extends StringN(underlying, 1)

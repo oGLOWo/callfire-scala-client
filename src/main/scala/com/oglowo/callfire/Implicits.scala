@@ -2,8 +2,9 @@ package com.oglowo.callfire
 
 object Implicits extends Implicits
 trait Implicits extends ClassDefinitions {
-  implicit def StringWithPrecondition2String(string: StringWithPrecondition) = string.underlying
-  implicit def IntWithPrecondition2Int(value: IntWithPrecondition) = value.underlying
+  implicit def StringWithPrecondition2String(string: StringWithPrecondition): String = string.underlying
+  implicit def IntWithPrecondition2Int(value: IntWithPrecondition): Int = value.underlying
+  implicit def IntWithPrecondition2String(value: IntWithPrecondition): String = value.underlying.toString
 
   implicit def Int2OneDigitInt(value: Int) = OneDigitInt(value)
   implicit def Int2TwoDigitInt(value: Int) = TwoDigitInt(value)
