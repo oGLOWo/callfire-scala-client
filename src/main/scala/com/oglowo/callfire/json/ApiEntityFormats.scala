@@ -11,6 +11,7 @@ import spray.http.Uri
 import com.oglowo.callfire.Imports._
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.money.{CurrencyUnit, Money}
+import com.github.nscala_time.time.Imports._
 
 object ApiEntityFormats extends DefaultJsonProtocol {
   val CallFireDateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-ddZ")
@@ -89,7 +90,11 @@ object ApiEntityFormats extends DefaultJsonProtocol {
   }
 
   implicit val LeaseFormat = new RootJsonFormat[Lease] {
-    def write(obj: Lease): JsValue = ???
+    def write(obj: Lease): JsValue = JsObject(Map(
+      "autoRenew" -> obj.autoRenew.toJson,
+      "begin" -> optionFormat[DateTime].write(obj.begin),
+      "end" -> optionFormat[DateTime].write(obj.end)
+    ))
 
     def read(json: JsValue): Lease = json match {
       case leaseJson: JsObject => {
@@ -190,6 +195,15 @@ object ApiEntityFormats extends DefaultJsonProtocol {
         }
       }
       case _ => deserializationError("Failed to deserialize PhoneNumberConfiguration because it was not a JsonObject")
+    }
+  }
+
+  implicit val phoneNumberStatusFormat = new RootJsonFormat[PhoneNumberStatus] {
+    def write(obj: PhoneNumberStatus): JsValue = obj.name.toJson
+
+    def read(json: JsValue): PhoneNumberStatus = json match {
+      case JsString(value) => PhoneNumberStatus.withName(value)
+      case default => deserializationError(s"Expecting PhoneNumberStatus to be json string, but got ${default.getClass}")
     }
   }
 
@@ -331,8 +345,60 @@ object ApiEntityFormats extends DefaultJsonProtocol {
     }
   }
 
+  implicit val orderStatusFormat = new RootJsonFormat[OrderStatus] {
+    def write(obj: OrderStatus): JsValue = obj.name.toJson
+
+    def read(json: JsValue): OrderStatus = json match {
+      case JsString(s) => OrderStatus.withName(s)
+      case default => deserializationError(s"Expecting OrderStatus to be json string, but got $default.getClass")
+    }
+  }
+
+  implicit val jodaMoneyFormat = new RootJsonFormat[Money] {
+    def write(obj: Money): JsValue = obj.toString.toJson
+
+    def read(json: JsValue): Money = json match {
+      case JsString(s) => Money.parse(s)
+      case default => deserializationError(s"Expecting money to be json string, but got $default.getClass")
+    }
+  }
+
+  implicit val jodaDateTimeFormat = new RootJsonFormat[DateTime] {
+    def write(obj: DateTime): JsValue = obj.millis.toLong.toJson
+
+    def read(json: JsValue): DateTime = json match {
+      case JsNumber(value) => new DateTime(value)
+      case default => deserializationError(s"Expecting DateTime to be a number, but got $default.getClass")
+    }
+  }
+
+  implicit val keywordFormat = new RootJsonFormat[Keyword] {
+    def write(obj: Keyword): JsValue = obj.
+
+    def read(json: JsValue): Keyword = ???
+  }
+
+  override type JF[T] = JsonFormat[T]
+  implicit val orderItemFormat = new RootJsonFormat[OrderItem[JF]] {
+    def write(obj: OrderItem[ApiEntityFormats.JF]): JsValue = JsObject(Map(
+      "quantity" -> obj.quantity.toJson,
+      "itemCost" -> obj.itemCost.toJson,
+      "itemsFulfilled" -> seqFormat[JF].write(obj.itemsFulfilled)
+    ))
+
+    def read(json: JsValue): OrderItem[ApiEntityFormats.JF] = ???
+  }
+
   implicit val OrderFormat = new RootJsonFormat[Order] {
-    def write(obj: Order): JsValue = ???
+    def write(obj: Order): JsValue = JsObject(Map(
+      "id" -> obj.id.toJson,
+      "status"-> obj.status.toJson,
+      "totalCost" -> obj.totalCost.toJson,
+      "createdOn" -> obj.createdOn.toJson,
+      "keywords" -> optionFormat[OrderItem[Keyword]].write(obj.keywords),
+      "localNumbers" -> optionFormat[OrderItem[PhoneNumber]].write(obj.localNumbers),
+      "tollFreeNumbers" -> optionFormat[OrderItem[PhoneNumber]].write(obj.tollFreeNumbers)
+    ))
 
     def read(json: JsValue): Order = json match {
       case JsObject(fields) => {
