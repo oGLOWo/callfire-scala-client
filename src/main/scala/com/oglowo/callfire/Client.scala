@@ -5,14 +5,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import akka.actor.{ActorSystem}
 import akka.pattern.ask
 import akka.io.IO
-import scala.util.{Failure, Success}
 import spray.http._
 import spray.httpx.UnsuccessfulResponseException
 import spray.can.Http
 import spray.client.pipelining._
 import spray.util._
 import scala.concurrent.duration._
-import com.oglowo.callfire.entity.{OrderReference, ApiError, PhoneNumber}
+import com.oglowo.callfire.entity._
 import com.oglowo.callfire.json.ApiEntityFormats._
 import akka.event.Logging
 import com.typesafe.scalalogging.log4j.Logging
@@ -21,6 +20,12 @@ import spray.http.HttpHeaders._
 import pimps._
 import scalaz._
 import Scalaz._
+import scalaz.{Success => ScalazSuccess, Failure => ScalazFailure}
+import spray.http.HttpRequest
+import scala.util.Failure
+import scala.Some
+import spray.http.HttpResponse
+import scala.util.Success
 import com.oglowo.callfire.Imports._
 
 
@@ -137,26 +142,162 @@ trait Client {
 
 object Main extends Logging {
   def main(args: Array[String]) {
-    val prefix = args(0)
-    val city = args(1)
-    val count = args(2)
+//    val prefix = args(0)
+//    val city = args(1)
+//    val count = args(2)
+//    val numberIndex = args(3).toInt
+    val phoneNumber = args(0)
 
     val client = new Client with ProductionClientConnection
     import client._
 
-    client.getOrder(OrderReference(271588001L, Uri("https://www.callfire.com/api/1.1/rest/number/order/271588001"))) onComplete {
-      case Success(order) => {
-        println(order)
+    val dialplan = """<dialplan name="Root">
+                     |	<menu name="main_menu" maxDigits="1" timeout="3500">
+                     |		<play type="tts" voice="female2">Hey! Press 1 if you want me to tell you off. Press 2 if you want me to transfer you to Latte or Daniel</play>
+                     |		<keypress pressed="2">
+                     |			<transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" screen="true" whisper-tts="yyyyYo yo yo press 1 if you want to take this here call, son!">
+                     |        12132228559,13107738288
+                     |      </transfer>
+                     |		</keypress>
+                     |		<keypress pressed="1">
+                     |			<play name="ethnic_woman_talking_shit" type="tts" voice="spanish1">Hijo de to pinchi madre. Vete a la puta verga, pendejo!</play>
+                     |		</keypress>
+                     |	</menu>
+                     |</dialplan>
+                     | """.stripMargin('|')
+
+    val number: PhoneNumber = PhoneNumber(phoneNumber)
+    client.put(s"/api/1.1/rest/number/${number.number}.json", Some(Map(
+      "CallFeature" -> "ENABLED",
+      "TextFeature" -> "DISABLED",
+      "InboundCallConfigurationType" -> "IVR",
+      "DialplanXml" -> dialplan,
+      "Number" -> number.number.toString
+    ))) onComplete {
+      case Success(configureResponse) => {
+        println(".....!!!! OK Please call " + number.nationalFormat + " to test it out !!!!......")
         client.shutdown()
       }
       case Failure(error) => {
-        error match {
-          case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
-          case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
-        }
         client.shutdown()
+        println("Error configuring your number " + error)
       }
     }
+
+//    client.searchForNumbers(implicitly[Min4DigitInt](prefix.toInt).some, city.some, count.toInt) onComplete {
+//      case Success(response) => {
+//        if (!response.isEmpty) {
+//          val number = response(numberIndex)
+//          println(s"!!!!![[[[[[ I'm going to try and purchase ${number.nationalFormat}")
+//          client.orderNumbers(Set(number)) onComplete {
+//            case Success(orderReference) => {
+//              println("....checking order status....")
+//              client.getOrder(orderReference) onComplete {
+//                case Success(order) => {
+//                  println("Order is in " + order.status.name + " state")
+//                  var done = order.status match {
+//                    case FinishedOrderStatus => true
+//                    case ErroredOrderStatus => true
+//                    case VoidOrderStatus => true
+//                    case _ => false
+//                  }
+//                  var theOrder = order
+//                  while (!done) {
+//                    theOrder = client.getOrder(orderReference).await(100.seconds)
+//                    println("[[[....checking order status....]]]")
+//                    done = theOrder.status match {
+//                      case FinishedOrderStatus => true
+//                      case ErroredOrderStatus => true
+//                      case VoidOrderStatus => true
+//                      case _ => false
+//                    }
+//                  }
+//
+//                    theOrder.tollFreeNumbers match {
+//                      case Some(orderItem) => {
+//                        if (!orderItem.itemsFulfilled.isEmpty) {
+//                          println(".... LOOKS LIKE WE FULFILLED YOUR ORDER ....")
+//                          println(".... Configuring your number ...")
+//                          val dialplan = """<dialplan name="Root">
+//                          |	<menu name="main_menu" maxDigits="1" timeout="3500">
+//                          |		<play type="tts" voice="female2">Hey! Press 1 if you want me to tell you off. Press 2 if you want me to transfer you to Latte or Daniel</play>
+//                          |		<keypress pressed="2">
+//                          |			<transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" screen="true" whisper-tts="yyyyYo yo yo press 1 if you want to take this here call, son!">
+//                          |        12132228559,13107738288
+//                          |      </transfer>
+//                          |		</keypress>
+//                          |		<keypress pressed="1">
+//                          |			<play name="ethnic_woman_talking_shit" type="tts" voice="spanish1">Hijo de to pinchi madre. Vete a la puta verga, pendejo!</play>
+//                          |		</keypress>
+//                          |	</menu>
+//                          |</dialplan>
+//                          | """.stripMargin('|')
+//
+//                          client.put(s"/api/1.1/rest/number/$number.json", Some(Map(
+//                            "CallFeature" -> "ENABLED",
+//                            "TextFeature" -> "DISABLED",
+//                            "InboundCallConfigurationType" -> "IVR",
+//                            "DialplanXml" -> dialplan,
+//                            "Number" -> number.number.toString
+//                          ))) onComplete {
+//                            case Success(configureResponse) => {
+//                              println(".....!!!! OK Please call " + number.nationalFormat + " to test it out !!!!......")
+//                              client.shutdown()
+//                            }
+//                            case Failure(error) => {
+//                              client.shutdown()
+//                              println("Error configuring your number " + error)
+//                            }
+//                          }
+//                        }
+//                        else {
+//                          println("... no numbers fulfilled. ...")
+//                        }
+//                      }
+//                      case _ => {
+//                        println("... no numbers fulfilled. ...")
+//                        client.shutdown()
+//                      }
+//                  }
+//                }
+//                case Failure(error) => {
+//                  println("We encountered a boo boo " + error)
+//                  client.shutdown()
+//                }
+//              }
+//            }
+//            case Failure(error) => {
+//              println("We encountered a boo boo " + error)
+//              client.shutdown()
+//            }
+//          }
+//        }
+//        else {
+//          println("No numbers found for that criteria")
+//          client.shutdown()
+//        }
+//      }
+//      case Failure(error) => {
+//        error match {
+//          case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
+//          case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
+//        }
+//        client.shutdown()
+//      }
+//    }
+//    client.getOrder(OrderReference(271588001L, Uri("https://www.callfire.com/api/1.1/rest/number/order/271588001"))) onComplete {
+//      case Success(order) => {
+//        println(order)
+//        client.shutdown()
+//      }
+//      case Failure(error) => {
+//        error match {
+//          case e: UnsuccessfulResponseException => logger.info("API ERROR {}", e.asApiError)
+//          case e: Throwable => logger.error("BOOOOO NON API ERROR", e)
+//        }
+//        client.shutdown()
+//      }
+//    }
 //    searchForNumbers(implicitly[Min4DigitInt](prefix.toInt).some, city.some, count.toInt) onComplete {
 //      case Success(response) => {
 //        println("!!!!! NUMBERS !!!!!")

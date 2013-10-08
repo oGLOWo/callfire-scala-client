@@ -12,8 +12,9 @@ import com.oglowo.callfire.Imports._
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.money.{CurrencyUnit, Money}
 import com.github.nscala_time.time.Imports._
+import com.typesafe.scalalogging.log4j.Logging
 
-object ApiEntityFormats extends DefaultJsonProtocol {
+object ApiEntityFormats extends DefaultJsonProtocol with Logging {
   val CallFireDateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-ddZ")
   val CallFireIsoDateTimeFormatter = ISODateTimeFormat.dateTimeNoMillis
 
@@ -86,6 +87,24 @@ object ApiEntityFormats extends DefaultJsonProtocol {
         Region(prefix, city, state, postalCode, country, localAccessTransportArea, rateCenter, latitude, longitude, timeZone)
       }
       case _ => deserializationError("Failed to deserialize Region because it was not a JsonObject")
+    }
+  }
+
+  implicit val jodaMoneyFormat = new RootJsonFormat[Money] {
+    def write(obj: Money): JsValue = obj.toString.toJson
+
+    def read(json: JsValue): Money = json match {
+      case JsString(s) => Money.parse(s)
+      case default => deserializationError(s"Expecting money to be json string, but got $default.getClass")
+    }
+  }
+
+  implicit val jodaDateTimeFormat = new RootJsonFormat[DateTime] {
+    def write(obj: DateTime): JsValue = obj.millis.toLong.toJson
+
+    def read(json: JsValue): DateTime = json match {
+      case JsNumber(value) => new DateTime(value)
+      case default => deserializationError(s"Expecting DateTime to be a number, but got $default.getClass")
     }
   }
 
@@ -207,6 +226,15 @@ object ApiEntityFormats extends DefaultJsonProtocol {
     }
   }
 
+  implicit val keywordStatusFormat = new RootJsonFormat[KeywordStatus] {
+    def write(obj: KeywordStatus): JsValue = obj.name.toJson
+
+    def read(json: JsValue): KeywordStatus = json match {
+      case JsString(value) => KeywordStatus.withName(value)
+      case default => deserializationError(s"Expecting KeywordStatus to be json string, but got ${default.getClass}")
+    }
+  }
+
   implicit val PhoneNumberFormat = new RootJsonFormat[PhoneNumber] {
     def write(obj: PhoneNumber): JsValue = ???
 
@@ -254,8 +282,9 @@ object ApiEntityFormats extends DefaultJsonProtocol {
         case JsArray(elements) => {
           elements.map(_.asJsObject).map(entityJson => {
             val fields = entityJson.getFields("Number", "NationalFormat", "TollFree")
+            println(">>>>> Here are the fields " + fields)
             fields match {
-              case Seq(JsNumber(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
+              case Seq(JsString(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
                 val region: Option[Region] = entityJson.fields.get("Region") match {
                   case Some(regionJson) => Option(regionJson.convertTo[Region])
                   case _ => None
@@ -280,7 +309,7 @@ object ApiEntityFormats extends DefaultJsonProtocol {
         }
         case numberJson: JsObject => {
           numberJson.getFields("Number", "NationalFormat", "TollFree") match {
-            case Seq(JsNumber(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
+            case Seq(JsString(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
               val region: Option[Region] = numberJson.fields.get("Region") match {
                 case Some(regionJson) => Option(regionJson.convertTo[Region])
                 case _ => None
@@ -310,8 +339,8 @@ object ApiEntityFormats extends DefaultJsonProtocol {
       case jsonResponse: JsObject => {
         val resourceListJson = jsonResponse.getFields("ResourceList").head.asJsObject
         resourceListJson.getFields("@totalResults").head match {
-          case JsString(totalResultsString) => {
-            val totalResults = totalResultsString.toInt
+          case JsNumber(number) => {
+            val totalResults = number.toInt
             if (totalResults <= 0) Seq.empty[PhoneNumber] else parsePhoneNumbers(resourceListJson)
           }
           case _ => deserializationError("@totalResults was not a JSON number")
@@ -354,39 +383,26 @@ object ApiEntityFormats extends DefaultJsonProtocol {
     }
   }
 
-  implicit val jodaMoneyFormat = new RootJsonFormat[Money] {
-    def write(obj: Money): JsValue = obj.toString.toJson
-
-    def read(json: JsValue): Money = json match {
-      case JsString(s) => Money.parse(s)
-      case default => deserializationError(s"Expecting money to be json string, but got $default.getClass")
-    }
-  }
-
-  implicit val jodaDateTimeFormat = new RootJsonFormat[DateTime] {
-    def write(obj: DateTime): JsValue = obj.millis.toLong.toJson
-
-    def read(json: JsValue): DateTime = json match {
-      case JsNumber(value) => new DateTime(value)
-      case default => deserializationError(s"Expecting DateTime to be a number, but got $default.getClass")
-    }
-  }
-
   implicit val keywordFormat = new RootJsonFormat[Keyword] {
-    def write(obj: Keyword): JsValue = obj.
+    def write(obj: Keyword): JsValue = JsObject(Map(
+      "shortCode" -> obj.shortCode.toJson,
+      "keyword" -> obj.keyword.toJson,
+      "status" -> optionFormat[KeywordStatus].write(obj.status),
+      "lease" -> optionFormat[Lease].write(obj.lease)
+    ))
 
     def read(json: JsValue): Keyword = ???
   }
 
   override type JF[T] = JsonFormat[T]
-  implicit val orderItemFormat = new RootJsonFormat[OrderItem[JF]] {
-    def write(obj: OrderItem[ApiEntityFormats.JF]): JsValue = JsObject(Map(
+  implicit def orderItemFormat[T <: ApiEntity : JF] = new JF[OrderItem[T]] {
+    def write(obj: OrderItem[T]): JsValue = JsObject(Map(
       "quantity" -> obj.quantity.toJson,
       "itemCost" -> obj.itemCost.toJson,
-      "itemsFulfilled" -> seqFormat[JF].write(obj.itemsFulfilled)
+      "itemsFulfilled" -> seqFormat[T].write(obj.itemsFulfilled)
     ))
 
-    def read(json: JsValue): OrderItem[ApiEntityFormats.JF] = ???
+    def read(json: JsValue): OrderItem[T] = ???
   }
 
   implicit val OrderFormat = new RootJsonFormat[Order] {
@@ -411,7 +427,7 @@ object ApiEntityFormats extends DefaultJsonProtocol {
                     order match {
                       case orderJson: JsObject => {
                         orderJson.getFields("@id", "Status", "Created", "TotalCost") match {
-                          case Seq(JsString(id), JsString(status), JsString(createdOn), JsNumber(totalCost)) => {
+                          case Seq(JsNumber(id), JsString(status), JsString(createdOn), JsNumber(totalCost)) => {
                             val maybeLocalNumbers: Option[OrderItem[PhoneNumber]] = orderJson.fields.get("LocalNumbers") match {
                               case Some(localNumbersValue) => localNumbersValue match {
                                 case localNumbersJson: JsObject => {
