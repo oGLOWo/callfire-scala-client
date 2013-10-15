@@ -38,6 +38,12 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
     }
   }
 
+  implicit val SoundMetaDataFormat = new RootJsonFormat[SoundMetaData] {
+    def write(obj: SoundMetaData): JsValue = ???
+
+    def read(json: JsValue): SoundMetaData = ???
+  }
+
   implicit val RegionFormat = new RootJsonFormat[Region] {
     def write(obj: Region): JsValue = ???
 

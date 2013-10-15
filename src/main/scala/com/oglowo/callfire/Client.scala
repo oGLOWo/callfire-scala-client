@@ -146,17 +146,19 @@ trait Client {
     get("number/search.json", parameters.some).as[Seq[PhoneNumber]]
   }
 
-  def recordSoundViaPhone(number: PhoneNumber, maybeName: Option[String] = None): Future[] = {
-    val soundName = maybeName match {
-      case Some(name) => name
-      case None => s"Vonjour-CallFire-API-Recording-${number.number}"
-    }
-
-    val parameters = Map(
-      "ToNumber" -> s"${number.number}",
-      "Name" -> soundName
-    )
-  }
+//  def recordSoundViaPhone(number: PhoneNumber, maybeName: Option[String] = None): Future[SoundMetaData] = {
+//    val soundName = maybeName match {
+//      case Some(name) => name
+//      case None => s"Vonjour-CallFire-API-Recording-${number.number}"
+//    }
+//
+//    val parameters = Map(
+//      "ToNumber" -> s"${number.number}",
+//      "Name" -> soundName
+//    )
+//
+//    post("call/sound.json", parameters.some).as[SoundMetaData]
+//  }
 
   def shutdown(): Unit = {
     IO(Http)(system).ask(Http.CloseAll)(1.seconds).await
