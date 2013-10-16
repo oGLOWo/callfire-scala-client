@@ -13,10 +13,24 @@ import org.joda.time.format.ISODateTimeFormat
 import org.joda.money.{CurrencyUnit, Money}
 import com.github.nscala_time.time.Imports._
 import com.typesafe.scalalogging.log4j.Logging
+import scala.concurrent.duration.{Duration => ScalaDuration}
+import java.util.concurrent.TimeUnit
 
 object ApiEntityFormats extends DefaultJsonProtocol with Logging {
   val CallFireDateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-ddZ")
   val CallFireIsoDateTimeFormatter = ISODateTimeFormat.dateTimeNoMillis
+
+  implicit val UriFormat = new RootJsonFormat[Uri] {
+    def write(obj: Uri): JsValue = Option(obj) match {
+      case Some(uri) => uri.toString.toJson
+      case None => serializationError("Cannot serialize a null Uri object to json")
+    }
+
+    def read(json: JsValue): Uri = json match {
+      case JsString(value) => Uri(value)
+      case _ => deserializationError(s"Expecting uri to be a json string, but it was ${json.getClass}")
+    }
+  }
 
   implicit val ApiErrorFormat = new RootJsonFormat[ApiError] {
     def write(obj: ApiError): JsValue = ???
@@ -27,21 +41,76 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
           case Some(exceptionJson) => {
             exceptionJson.asJsObject.getFields("HttpStatus", "Message") match {
               case Seq(JsNumber(status), JsString(message)) => ApiError(message, status.intValue)
-              case _ => throw new DeserializationException("JSON did not contain required fields HttpStatus and Message")
+              case _ => deserializationError("JSON did not contain required fields HttpStatus and Message")
             }
           }
-          case _ => throw new DeserializationException("JSON did not contain ResourceException field")
+          case _ => deserializationError("JSON did not contain ResourceException field")
         }
       }
 
-      case default => throw new DeserializationException(s"Expected JsObject, but got ${default.getClass}")
+      case default => deserializationError(s"Expected JsObject, but got ${default.getClass}")
+    }
+  }
+
+  implicit val SoundReferenceFormat = new RootJsonFormat[SoundReference] {
+    def write(obj: SoundReference): JsValue = Option(obj) match {
+      case Some(reference) => JsObject(Map(
+        "id" -> reference.id.toJson,
+        "location" -> reference.location.toJson
+      ))
+      case None => serializationError("null object cannot be serialized as SoundReference")
+    }
+
+    def read(json: JsValue): SoundReference = json match {
+      case responseJson: JsObject => {
+        responseJson.fields.get("ResourceReference") match {
+          case Some(reference) => {
+            reference match {
+              case referenceJson: JsObject => {
+                referenceJson.getFields("Id", "Location") match {
+                  case Seq(JsNumber(id), JsString(location)) => SoundReference(id.toLong, Uri(location))
+                  case _ => deserializationError("Failure deserializing order ResourceReference because required fields Id and Location were not all present")
+                }
+              }
+              case default => deserializationError(s"Failed to deserialize ResourceReference. Exepecting JsObject, but got ${default.getClass}")
+            }
+          }
+          case None => deserializationError("Failure deserializing SoundReference because there was no field ResourceReference that was present")
+        }
+      }
+      case _ => deserializationError(s"Expecting that the response would be a json object, but it wasn't ... it was ${json.getClass}")
     }
   }
 
   implicit val SoundMetaDataFormat = new RootJsonFormat[SoundMetaData] {
     def write(obj: SoundMetaData): JsValue = ???
 
-    def read(json: JsValue): SoundMetaData = ???
+    def read(json: JsValue): SoundMetaData = json match {
+      case responseJson@JsObject(responseFields) => {
+        responseFields.get("Resource") match {
+          case Some(resource) => resource match {
+            case resourceJson@JsObject(resourceFields) => resourceFields.get("SoundMeta") match {
+              case Some(meta) => meta match {
+                case metaJson@JsObject(metaFields) => metaJson.getFields("@id", "Status", "Name", "Created", "LengthInSeconds") match {
+                  case Seq(JsNumber(id), JsString(status), JsString(name), JsString(createdOn), JsNumber(lengthInSeconds)) => {
+                    SoundMetaData(id.toLong, SoundStatus.withName(status), name, CallFireIsoDateTimeFormatter.parseDateTime(createdOn), Some(ScalaDuration(lengthInSeconds.toLong, TimeUnit.SECONDS)))
+                  }
+                  case Seq(JsNumber(id), JsString(status), JsString(name), JsString(createdOn)) => {
+                    SoundMetaData(id.toLong, SoundStatus.withName(status), name, CallFireIsoDateTimeFormatter.parseDateTime(createdOn))
+                  }
+                  case _ => deserializationError("Failure deserializing SoundMeta because it was missing one of the required @id, Status, Name, and/org Created fields")
+                }
+                case _ => deserializationError(s"Expecting SoundMeta to be json object, but it was ${meta.getClass}")
+              }
+              case None => deserializationError("Failure deserializing SoundMetaData because it was missing required SoundMeta field")
+            }
+            case _ => deserializationError(s"Expecting Resource to be json object, but it was ${resource.getClass}")
+          }
+          case None => deserializationError("Failure deserializing SoundMetaData because it was missing the requied Resource field")
+        }
+      }
+      case _ => deserializationError(s"Expecting response to be json object, but it was ${json.getClass}")
+    }
   }
 
   implicit val RegionFormat = new RootJsonFormat[Region] {
