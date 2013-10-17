@@ -27,6 +27,11 @@ import scala.Some
 import spray.http.HttpResponse
 import com.oglowo.callfire.Imports._
 import java.util.UUID
+import spray.json._
+import spray.httpx.SprayJsonSupport
+import SprayJsonSupport._
+import MediaRanges._
+import spray.httpx.unmarshalling.BasicUnmarshallers
 
 
 trait Client {
@@ -44,6 +49,7 @@ trait Client {
   lazy val pipeline: HttpRequest => Future[HttpResponse] = (
     addCredentials(BasicHttpCredentials(credentials._1, credentials._2))
       ~> addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "1.0", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.2-M8", "http://spray.io")))
+      ~> addHeader(Accept(`*/*`))
       ~> logRequest(log)
       ~> sendReceive(connection)(context, timeout)
       ~> decode(Deflate)
@@ -167,6 +173,15 @@ trait Client {
 
   def getSoundMetaData(reference: SoundReference): Future[SoundMetaData] = {
     getSoundMetaData(reference.id)
+  }
+
+  def getSound(reference: SoundReference): Future[Array[Byte]] = {
+    getSound(reference.id)
+  }
+
+  def getSound(id: Long): Future[Array[Byte]] = {
+    val future = get(s"call/sound/$id.mp3")
+    future.as[Array[Byte]]
   }
 
   def shutdown(): Unit = {

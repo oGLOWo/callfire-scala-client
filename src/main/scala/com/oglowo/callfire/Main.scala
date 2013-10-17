@@ -14,6 +14,8 @@ import Scalaz._
 import scala.util.Success
 import scala.util.Failure
 import scala.Some
+import java.io.{File, FileOutputStream}
+import java.nio.ByteBuffer
 
 object Main extends Logging {
   val client = new Client with ProductionClientConnection
@@ -143,31 +145,43 @@ object Main extends Logging {
     val city = args(1)
     val count = args(2)
 
-    runTryPurchaseAndConfigureNumber(client, prefix.toInt, city, count.toInt)
+    //runTryPurchaseAndConfigureNumber(client, prefix.toInt, city, count.toInt)
 
-//    client.recordSoundViaPhone(PhoneNumber(12134485916L), "Console Test".some) onComplete {
-//      case Success(reference) => {
-//        println(s"The Sound Reference is $reference")
-//        println("Waiting for you to finish recording...")
-//
-//        Iterator.continually({Thread.sleep(1000);Await.result(client.getSoundMetaData(reference), 30.seconds)}).takeWhile(soundMetaData => {
-//          if (soundMetaData.status != PendingSoundStatus) {
-//            println("-----metadata-----")
-//            println(soundMetaData)
-//            println("------------------")
-//          }
-//          soundMetaData.status == PendingSoundStatus
-//        }).foreach(soundMetaData => {
-//          println(s"[[[ SOUND STATUS is ${soundMetaData.status}-${System.currentTimeMillis()}")
-//        })
-//
-//        println(s"OK COOL you finished recording so you can access your sound at ${reference.location}")
-//        client.shutdown()
-//      }
-//      case Failure(error) => {
-//        printError(error)
-//        client.shutdown()
-//      }
-//    }
+    client.recordSoundViaPhone(PhoneNumber(12134485916L), "Console Test".some) onComplete {
+      case Success(reference) => {
+        println(s"The Sound Reference is $reference")
+        println("Waiting for you to finish recording...")
+
+        Iterator.continually({Thread.sleep(1000);Await.result(client.getSoundMetaData(reference), 30.seconds)}).takeWhile(soundMetaData => {
+          if (soundMetaData.status != PendingSoundStatus) {
+            println("-----metadata-----")
+            println(soundMetaData)
+            println("------------------")
+          }
+          soundMetaData.status == PendingSoundStatus
+        }).foreach(soundMetaData => {
+          println(s"[[[ SOUND STATUS is ${soundMetaData.status}-${System.currentTimeMillis()}")
+        })
+
+        println(s"OK COOL you finished recording so you can access your sound at ${reference.location}")
+        client.getSound(reference) onComplete {
+          case Success(soundBytes) => {
+            val temporaryFile = File.createTempFile(s"${reference.id}-${System.currentTimeMillis()}", "mp3")
+            val outputStream = new FileOutputStream(temporaryFile)
+            val bytesWritten = outputStream.getChannel.write(ByteBuffer.wrap(soundBytes))
+            println(s"Wrote $bytesWritten/${soundBytes.length} to $temporaryFile")
+            client.shutdown()
+          }
+          case Failure(error) => {
+            printError(error)
+            client.shutdown()
+          }
+        }
+      }
+      case Failure(error) => {
+        printError(error)
+        client.shutdown()
+      }
+    }
   }
 }

@@ -18,6 +18,8 @@ javaOptions := Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,
 
 resolvers ++= Seq("spray repo" at "http://repo.spray.io/")
 
+fork := false
+
 libraryDependencies ++= Seq(
   "io.spray"                  %   "spray-can"           %  "1.2-M8",
   "io.spray"                  %   "spray-http"          %  "1.2-M8",
