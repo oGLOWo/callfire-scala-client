@@ -31,20 +31,8 @@ package object pimps extends Logging {
 //    })
 
     def as[T](implicit unmarshaller: Unmarshaller[T]): Future[T] = underlying.map(response => {
-      logger.debug("My unmarshaler is " + unmarshaller)
-      logger.debug("Can we get an unmarshaler for a type? ...... "+ implicitly[Unmarshaller[Array[Byte]]])
       if (response.status.isSuccess) {
-        response.entity.as(implicitly[Unmarshaller[T]]) match {
-          case Right(entity) => entity
-          case Left(error) => throw new PipelineException(error.toString)
-        }
-      }
-      else throw new UnsuccessfulResponseException(response)
-    })
-
-    def raw(): Future[Array[Byte]] = underlying.map(response => {
-      if (response.status.isSuccess) {
-        response.entity.as[Array[Byte]] match {
+        response.entity.as[T] match {
           case Right(entity) => entity
           case Left(error) => throw new PipelineException(error.toString)
         }

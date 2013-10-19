@@ -31,7 +31,8 @@ import spray.json._
 import spray.httpx.SprayJsonSupport
 import SprayJsonSupport._
 import MediaRanges._
-import spray.httpx.unmarshalling.BasicUnmarshallers
+import spray.httpx.unmarshalling.{Unmarshaller, BasicUnmarshallers}
+import spray.httpx.marshalling.BasicMarshallers
 
 
 trait Client {
@@ -41,15 +42,19 @@ trait Client {
 
   lazy val log = Logging(system, getClass)
 
-  //  def logRequest(log: LoggingAdapter): HttpRequest ⇒ HttpRequest =
-  //    logRequest { request ⇒ log.debug(request.toString) }
-
   import system.dispatcher
+
+  def addJoyentCredentials(keyPath: String, fingerprint: String, login: String): RequestTransformer = {
+    // compute shit
+    val signature = "asdfasdfasdf"
+    import spray.httpx._
+    addCredentials(GenericHttpCredentials("Signature", Map.empty[String, String]))
+  }
 
   lazy val pipeline: HttpRequest => Future[HttpResponse] = (
     addCredentials(BasicHttpCredentials(credentials._1, credentials._2))
+      ~> addJoyentCredentials("", "", "")
       ~> addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "1.0", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.2-M8", "http://spray.io")))
-      ~> addHeader(Accept(`*/*`))
       ~> logRequest(log)
       ~> sendReceive(connection)(context, timeout)
       ~> decode(Deflate)
@@ -175,13 +180,16 @@ trait Client {
     getSoundMetaData(reference.id)
   }
 
-  def getSound(reference: SoundReference): Future[Array[Byte]] = {
-    getSound(reference.id)
+  def getSound(reference: SoundReference, soundType: SoundType = WavSoundType): Future[Array[Byte]] = {
+    getSound(reference.id, soundType)
   }
 
-  def getSound(id: Long): Future[Array[Byte]] = {
-    val future = get(s"call/sound/$id.mp3")
-    future.as[Array[Byte]]
+  def getSound(id: Long, soundType: SoundType): Future[Array[Byte]] = {
+    val extension = soundType match {
+      case WavSoundType => "wav"
+      case Mp3SoundType => "mp3"
+    }
+    get(s"call/sound/$id.$extension").as(BasicUnmarshallers.ByteArrayUnmarshaller)
   }
 
   def shutdown(): Unit = {
