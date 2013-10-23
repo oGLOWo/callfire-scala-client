@@ -44,16 +44,8 @@ trait Client {
 
   import system.dispatcher
 
-  def addJoyentCredentials(keyPath: String, fingerprint: String, login: String): RequestTransformer = {
-    // compute shit
-    val signature = "asdfasdfasdf"
-    import spray.httpx._
-    addCredentials(GenericHttpCredentials("Signature", Map.empty[String, String]))
-  }
-
   lazy val pipeline: HttpRequest => Future[HttpResponse] = (
     addCredentials(BasicHttpCredentials(credentials._1, credentials._2))
-      ~> addJoyentCredentials("", "", "")
       ~> addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "1.0", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.2-M8", "http://spray.io")))
       ~> logRequest(log)
       ~> sendReceive(connection)(context, timeout)
@@ -131,7 +123,19 @@ trait Client {
   }
 
   def orderNumbers(numbers: Set[PhoneNumber]): Future[OrderReference] = {
-    val parameters = Map("Numbers" -> numbers.map(_.number.toString).mkString(","))
+    val parameters = Map(
+      "Numbers" -> numbers.map(_.number.toString).mkString(","),
+      "localCount" -> numbers.length.toString,
+      "Prefix" -> "1213",
+      "City" -> "Los Angeles"
+    )
+    post("number/order.json", parameters.some).as[OrderReference]
+  }
+
+  def bulkOrderNumbers(prefix: Option[Min4DigitInt] = None, city: Option[String] = None, count: Int = 1): Future[OrderReference] = {
+    val parameters: Map[String, String] = Map("localCount" -> count.toString) |>
+      { map => if (prefix.isDefined) map + ("Prefix" -> prefix.get.underlying.toString) else map } |>
+      { map => if (city.isDefined) map + ("City" -> city.get) else map }
     post("number/order.json", parameters.some).as[OrderReference]
   }
 

@@ -9,7 +9,7 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 
-trait ProductionClientConnection extends ClientConnection {
+trait ProductionRunscopeClientConnection extends ClientConnection {
   implicit val system: ActorSystem = ActorSystem("callfire-scala-spray-client")
   implicit val context: ExecutionContext = system.dispatcher
   implicit val timeout: Timeout = 30.seconds
@@ -22,7 +22,11 @@ trait ProductionClientConnection extends ClientConnection {
 
   val connection: ActorRef = {
     for {
-      Http.HostConnectorInfo(connector, _) <- IO(Http) ? Http.HostConnectorSetup("www.callfire.com", port = 443, sslEncryption = true)
+      // Don't commit and push the host name with the actual bucket key otherwise you're giving the world access
+      // to your runscope account since this bitch is open source.
+      // If you happen to push it out, do yourself a favor and create a new bucket and delete the one associated
+      // with the key you pushed.
+      Http.HostConnectorInfo(connector, _) <- IO(Http) ? Http.HostConnectorSetup("www-callfire-com-b5mwzph4hatx.runscope.net", port = 443, sslEncryption = true)
     } yield connector
   }.await
 }
