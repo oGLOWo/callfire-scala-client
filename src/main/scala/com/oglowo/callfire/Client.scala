@@ -33,6 +33,7 @@ import SprayJsonSupport._
 import MediaRanges._
 import spray.httpx.unmarshalling.{Unmarshaller, BasicUnmarshallers}
 import spray.httpx.marshalling.BasicMarshallers
+import spray.http.MediaTypes.`multipart/form-data`
 
 
 trait Client {
@@ -94,9 +95,9 @@ trait Client {
           }
         })
 
-        Post(endpoint, MultipartFormData(parts))
+        Post(endpoint, MultipartFormData(parts)).withHeaders(`Content-Type`(`multipart/form-data`))
       }
-      case None => Post(endpoint)
+      case None => Post(endpoint).withHeaders(`Content-Type`(`multipart/form-data`))
     }
   }
 
@@ -112,9 +113,9 @@ trait Client {
           }
         })
 
-        Put(endpoint, MultipartFormData(parts))
+        Put(endpoint, MultipartFormData(parts)).withHeaders(`Content-Type`(`multipart/form-data`))
       }
-      case None => Put(endpoint)
+      case None => Put(endpoint).withHeaders(`Content-Type`(`multipart/form-data`))
     }
   }
 
@@ -202,6 +203,10 @@ trait Client {
   def getNumber(number: PhoneNumber): Future[PhoneNumber] = {
     get(s"number/${number.number}.json").as[PhoneNumber]
   }
+
+//  def configureNumber(number: PhoneNumber): Future[PhoneNumber] = {
+//
+//  }
 
   def recordSoundViaPhone(number: PhoneNumber, maybeName: Option[String] = None): Future[SoundReference] = {
     val soundName = maybeName match {

@@ -37,5 +37,6 @@ libraryDependencies ++= Seq(
   "com.github.nscala-time"    %%  "nscala-time"         %  "0.4.2",
   "org.apache.logging.log4j"  %  "log4j-api"            %  "2.0-beta8",
   "org.apache.logging.log4j"  %  "log4j-core"           %  "2.0-beta8",
-  "org.joda"                  %  "joda-money"           %  "0.9"
+  "org.joda"                  %  "joda-money"           %  "0.9",
+  "com.oglowo"                %% "scala-phonenumber"    %  "0.1"
 )

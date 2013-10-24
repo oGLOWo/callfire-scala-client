@@ -213,6 +213,7 @@ object Main extends Logging {
                      |</dialplan>
                      | """.stripMargin('|')
 
+
 //    client.getNumber(PhoneNumber(number)) onComplete {
 //      case Success(phoneNumber) => {
 //        println(phoneNumber)
@@ -225,11 +226,11 @@ object Main extends Logging {
 //    }
 
     //runBulkOrderPurchase(purchaseMap)
-    val prefix = args(0)
-    val city = args(1)
-    val count = args(2)
+//    val prefix = args(0)
+//    val city = args(1)
+//    val count = args(2)
 
-    runTryPurchaseAndConfigureNumber(client, prefix.toInt, city, count.toInt)
+    //runTryPurchaseAndConfigureNumber(client, prefix.toInt, city, count.toInt)
 
 //    client.recordSoundViaPhone(PhoneNumber(12134485916L), "Console Test".some) onComplete {
 //      case Success(reference) => {
