@@ -82,6 +82,42 @@ trait Client {
     }
   }
 
+  def multipartPost(path: String, maybeParameters: Option[Map[String, (String, Any)]]): Future[HttpResponse] = pipeline {
+    val endpoint = constructPath(path)
+    log.debug(s"Posting $maybeParameters to $path")
+    maybeParameters match {
+      case Some(parameters) => {
+        val parts = parameters.mapValues(value => {
+          value._2 match {
+            case buffer: Array[Byte] => BodyPart(HttpEntity(ContentType(MediaType.custom(value._1)), buffer))
+            case default => BodyPart(HttpEntity(ContentType(MediaType.custom(value._1)), default.toString))
+          }
+        })
+
+        Post(endpoint, MultipartFormData(parts))
+      }
+      case None => Post(endpoint)
+    }
+  }
+
+  def multipartPut(path: String, maybeParameters: Option[Map[String, (String, Any)]]): Future[HttpResponse] = pipeline {
+    val endpoint = constructPath(path)
+    log.debug(s"Posting $maybeParameters to $path")
+    maybeParameters match {
+      case Some(parameters) => {
+        val parts = parameters.mapValues(value => {
+          value._2 match {
+            case buffer: Array[Byte] => BodyPart(HttpEntity(ContentType(MediaType.custom(value._1)), buffer))
+            case default => BodyPart(HttpEntity(ContentType(MediaType.custom(value._1)), default.toString))
+          }
+        })
+
+        Put(endpoint, MultipartFormData(parts))
+      }
+      case None => Put(endpoint)
+    }
+  }
+
   def put(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
     val endpoint = constructPath(path)
     maybeParameters match {
@@ -124,10 +160,7 @@ trait Client {
 
   def orderNumbers(numbers: Set[PhoneNumber]): Future[OrderReference] = {
     val parameters = Map(
-      "Numbers" -> numbers.map(_.number.toString).mkString(","),
-      "localCount" -> numbers.length.toString,
-      "Prefix" -> "1213",
-      "City" -> "Los Angeles"
+      "Numbers" -> numbers.map(_.number.toString).mkString(",")
     )
     post("number/order.json", parameters.some).as[OrderReference]
   }
