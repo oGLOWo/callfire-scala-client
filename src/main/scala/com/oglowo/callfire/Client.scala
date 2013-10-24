@@ -176,6 +176,10 @@ trait Client {
     get(s"number/order/${orderReference.id}.json").as[entity.Order]
   }
 
+  def getOrder(orderId: Long): Future[entity.Order] = {
+    get(s"number/order/$orderId.json").as[entity.Order]
+  }
+
   def searchForNumbers(prefix: Option[Min4DigitInt], city: Option[String], maxNumbers: Int = 1): Future[Seq[PhoneNumber]] = {
     val parameters = Map("Count" -> maxNumbers.toString) |> {
       m => if (prefix.isDefined) m + ("Prefix" -> implicitly[String](prefix.get)) else m
@@ -193,6 +197,10 @@ trait Client {
       m => if (prefix.isDefined) m + ("Prefix" -> implicitly[String](prefix.get)) else m
     }
     get("number/search.json", parameters.some).as[Seq[PhoneNumber]]
+  }
+
+  def getNumber(number: PhoneNumber): Future[PhoneNumber] = {
+    get(s"number/${number.number}.json").as[PhoneNumber]
   }
 
   def recordSoundViaPhone(number: PhoneNumber, maybeName: Option[String] = None): Future[SoundReference] = {

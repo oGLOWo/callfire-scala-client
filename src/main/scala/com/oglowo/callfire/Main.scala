@@ -198,6 +198,32 @@ object Main extends Logging {
   def main(args: Array[String]) {
 
 
+    val dialplan = """<dialplan name="Root">
+                     |	<menu name="main_menu" maxDigits="1" timeout="3500">
+                     |		<play type="tts" voice="female2">Hey! Press 1 if you want me to tell you off. Press 2 if you want me to transfer you to Latte or Daniel</play>
+                     |		<keypress pressed="2">
+                     |			<transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" screen="true" whisper-tts="yyyyYo yo yo press 1 if you want to take this here call, son!">
+                     |        12132228559,13107738288
+                     |      </transfer>
+                     |		</keypress>
+                     |		<keypress pressed="1">
+                     |			<play name="ethnic_woman_talking_shit" type="tts" voice="spanish1">Hijo de to pinchi madre. Vete a la puta verga, pendejo!</play>
+                     |		</keypress>
+                     |	</menu>
+                     |</dialplan>
+                     | """.stripMargin('|')
+
+//    client.getNumber(PhoneNumber(number)) onComplete {
+//      case Success(phoneNumber) => {
+//        println(phoneNumber)
+//        client.shutdown()
+//      }
+//      case Failure(error) => {
+//        printError(error)
+//        client.shutdown()
+//      }
+//    }
+
     //runBulkOrderPurchase(purchaseMap)
     val prefix = args(0)
     val city = args(1)

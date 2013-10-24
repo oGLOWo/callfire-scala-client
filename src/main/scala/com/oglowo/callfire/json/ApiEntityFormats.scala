@@ -311,7 +311,15 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
   }
 
   implicit val PhoneNumberFormat = new RootJsonFormat[PhoneNumber] {
-    def write(obj: PhoneNumber): JsValue = ???
+    def write(obj: PhoneNumber): JsValue = JsObject(Map(
+      "configuration" -> obj.configuration.toJson,
+      "lease" -> obj.lease.toJson,
+      "nationalFormat" -> obj.nationalFormat.toJson,
+      "number" -> obj.number.toJson,
+      "region" -> obj.region.toJson,
+      "status" -> obj.status.toJson,
+      "tollFree" -> obj.tollFree.toJson
+    ))
 
     def parsePhoneNumber(resourceJson: JsObject): PhoneNumber = {
       val entityJson = resourceJson.getFields("Number").head.asJsObject
