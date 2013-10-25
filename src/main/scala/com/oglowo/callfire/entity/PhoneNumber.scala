@@ -5,6 +5,7 @@ import PhoneNumberStatus._
 import scalaz._
 import Scalaz._
 import com.oglowo.callfire.Imports._
+import com.oglowo.phonenumber.{PhoneNumber => GlowPhoneNumber, PhoneNumberFormat}
 
 case class PhoneNumber(number: Long,
                        nationalFormat: String,
@@ -35,7 +36,17 @@ object PhoneNumber {
     TollFreePrefix("889", false, "reserved for future expansion".some)
   )
 
-  def apply(number: Long): PhoneNumber = PhoneNumber(number, "", false, None, None, None, None)
-  def apply(number: MaxString15): PhoneNumber = PhoneNumber(implicitly[String](number).toLong, "", false, None, None, None, None)
+  def apply(number: Long): PhoneNumber = {
+    GlowPhoneNumber(number.toString) match {
+      case Success(s) => PhoneNumber(number, s.format(PhoneNumberFormat.National), false, None, None, None, None)
+      case Failure(error) => throw new IllegalArgumentException(s"Number $number could not be parsed as a valid number", error)
+    }
+  }
+  def apply(number: MaxString15): PhoneNumber = {
+    GlowPhoneNumber(number) match {
+      case Success(s) => PhoneNumber(implicitly[String](number).toLong, s.format(PhoneNumberFormat.National), false, None, None, None, None)
+      case Failure(error) => throw new IllegalArgumentException(s"Number $number could not be parsed as a valid number", error)
+    }
+  }
 }
 

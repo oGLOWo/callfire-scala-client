@@ -21,10 +21,8 @@ import pimps._
 import scalaz._
 import Scalaz._
 import scalaz.{Success => ScalazSuccess, Failure => ScalazFailure}
-import spray.http.HttpRequest
 import scala.util.{Random, Failure, Success}
 import scala.Some
-import spray.http.HttpResponse
 import com.oglowo.callfire.Imports._
 import java.util.UUID
 import spray.json._
@@ -33,7 +31,16 @@ import SprayJsonSupport._
 import MediaRanges._
 import spray.httpx.unmarshalling.{Unmarshaller, BasicUnmarshallers}
 import spray.httpx.marshalling.BasicMarshallers
-import spray.http.MediaTypes.`multipart/form-data`
+import spray.http.MediaTypes._
+import spray.http.ContentTypes
+import spray.http.HttpRequest
+import com.oglowo.callfire.entity.SoundReference
+import scala.Some
+import com.oglowo.callfire.entity.OrderReference
+import com.oglowo.callfire.entity.SoundMetaData
+import spray.http.HttpResponse
+import spray.http.BodyPart
+import java.nio.charset.Charset
 
 
 trait Client {
@@ -83,15 +90,15 @@ trait Client {
     }
   }
 
-  def multipartPost(path: String, maybeParameters: Option[Map[String, (String, Any)]]): Future[HttpResponse] = pipeline {
+  def multipartPost(path: String, maybeParameters: Option[Map[String, (ContentType, Any)]]): Future[HttpResponse] = pipeline {
     val endpoint = constructPath(path)
     log.debug(s"Posting $maybeParameters to $path")
     maybeParameters match {
       case Some(parameters) => {
         val parts = parameters.mapValues(value => {
           value._2 match {
-            case buffer: Array[Byte] => BodyPart(HttpEntity(ContentType(MediaType.custom(value._1)), buffer))
-            case default => BodyPart(HttpEntity(ContentType(MediaType.custom(value._1)), default.toString))
+            case buffer: Array[Byte] => BodyPart(HttpEntity(value._1, buffer))
+            case default => BodyPart(HttpEntity(value._1, default.toString))
           }
         })
 
@@ -101,15 +108,15 @@ trait Client {
     }
   }
 
-  def multipartPut(path: String, maybeParameters: Option[Map[String, (String, Any)]]): Future[HttpResponse] = pipeline {
+  def multipartPut(path: String, maybeParameters: Option[Map[String, (ContentType, Any)]]): Future[HttpResponse] = pipeline {
     val endpoint = constructPath(path)
     log.debug(s"Posting $maybeParameters to $path")
     maybeParameters match {
       case Some(parameters) => {
         val parts = parameters.mapValues(value => {
           value._2 match {
-            case buffer: Array[Byte] => BodyPart(HttpEntity(ContentType(MediaType.custom(value._1)), buffer))
-            case default => BodyPart(HttpEntity(ContentType(MediaType.custom(value._1)), default.toString))
+            case buffer: Array[Byte] => BodyPart(HttpEntity(value._1, buffer))
+            case default => BodyPart(HttpEntity(value._1, default.toString))
           }
         })
 
@@ -200,13 +207,37 @@ trait Client {
     get("number/search.json", parameters.some).as[Seq[PhoneNumber]]
   }
 
-  def getNumber(number: PhoneNumber): Future[PhoneNumber] = {
+  def getNumber(number: PhoneNumber): Future[PhoneNumber]  = {
     get(s"number/${number.number}.json").as[PhoneNumber]
   }
 
-//  def configureNumber(number: PhoneNumber): Future[PhoneNumber] = {
-//
-//  }
+  def configureNumber(number: PhoneNumber): Future[PhoneNumber] = {
+    number.configuration match {
+      case Some(configuration) => {
+        println("Configuration is good")
+        val parts: Map[String, (ContentType, Any)] =
+          { if (configuration.callFeature.isDefined) Map(("CallFeature", (ContentTypes.`text/plain`, configuration.callFeature.get.value))) else Map.empty[String, (ContentType, Any)] } |>
+          { m: Map[String, (ContentType, Any)] => if (configuration.textFeature.isDefined) m + ("TextFeature" -> (ContentTypes.`text/plain`, configuration.textFeature.get.value)) else m } |>
+          { m: Map[String, (ContentType, Any)] =>
+            configuration.inboundCallConfiguration match {
+              case Some(inboundConfiguration) => inboundConfiguration match {
+                case configuration: InboundIvrConfiguration => {
+                  m + ("InboundCallConfigurationType" -> (ContentTypes.`text/plain`, "IVR")) +
+                    ("IvrInboundConfig[id]" -> (ContentTypes.`text/plain`, configuration.id.get)) +
+                    ("DialplanXml" -> (ContentType(`application/xml`), configuration.dialplanXml.get.toString.getBytes(Charset.forName("UTF-8"))))
+                }
+                case default => throw new IllegalArgumentException(s"$default is not currently supported by the client")
+              }
+              case None => m
+            }
+          }
+        multipartPut(s"number/${number.number}.json", parts.some).flatMap(_ => Future(number))
+      }
+      case None => {
+        Future { number }
+      }
+    }
+  }
 
   def recordSoundViaPhone(number: PhoneNumber, maybeName: Option[String] = None): Future[SoundReference] = {
     val soundName = maybeName match {
@@ -241,6 +272,15 @@ trait Client {
     }
     get(s"call/sound/$id.$extension").as(BasicUnmarshallers.ByteArrayUnmarshaller)
   }
+
+  // This is a hack to active a newly purchased number since it needs to receive 2 phone calls
+  // in order for it to accept any configuration via PUT /number/{Number}
+//  def activateNumber(number: PhoneNumber, fromNumber: PhoneNumber) = {
+//
+//    actorSystem.scheduler.scheduleOnce(5.seconds) {
+//      println("HELLO")
+//    }
+//  }
 
   def shutdown(): Unit = {
     IO(Http)(system).ask(Http.CloseAll)(1.seconds).await

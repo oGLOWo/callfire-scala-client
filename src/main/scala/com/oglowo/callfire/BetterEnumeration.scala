@@ -3,7 +3,7 @@ package com.oglowo.callfire
 trait BetterEnumeration {
   // Assuming they are using the sealed trait/case object pattern,
   // the case object will have a class name CaseObjectName$
-  def name: String = getClass.getName.stripSuffix("$")
+  def name: String = getClass.getSimpleName.stripSuffix("$")
 }
 
 trait BetterEnumerationCompanion[T <: BetterEnumeration] {

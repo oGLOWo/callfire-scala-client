@@ -91,23 +91,23 @@ object Main extends Logging {
                         println(".... LOOKS LIKE WE FULFILLED YOUR ORDER ....")
                         println(".... Configuring your number after 10 seconds ...")
 
-                        Thread.sleep(10000)
-                        client.multipartPut(s"/api/1.1/rest/number/${number.number}.json", Some(Map(
-                          "CallFeature" -> ("text/plain", "ENABLED"),
-                          "TextFeature" -> ("text/plain", "DISABLED"),
-                          "InboundCallConfigurationType" -> ("text/plain", "IVR"),
-                          "IvrInboundConfig[id]" -> ("text/plain", "the-grande-ivr"),
-                          "DialplanXml" -> ("application/xml", dialplan.getBytes("UTF-8"))
-                        ))) onComplete {
-                          case Success(configureResponse) => {
-                            println(".....!!!! OK Please call " + number.nationalFormat + " to test it out !!!!......")
-                            client.shutdown()
-                          }
-                          case Failure(error) => {
-                            printError(error)
-                            client.shutdown()
-                          }
-                        }
+//                        Thread.sleep(10000)
+//                        client.multipartPut(s"/api/1.1/rest/number/${number.number}.json", Some(Map(
+//                          "CallFeature" -> ("text/plain", "ENABLED"),
+//                          "TextFeature" -> ("text/plain", "DISABLED"),
+//                          "InboundCallConfigurationType" -> ("text/plain", "IVR"),
+//                          "IvrInboundConfig[id]" -> ("text/plain", "the-grande-ivr"),
+//                          "DialplanXml" -> ("application/xml", dialplan.getBytes("UTF-8"))
+//                        ))) onComplete {
+//                          case Success(configureResponse) => {
+//                            println(".....!!!! OK Please call " + number.nationalFormat + " to test it out !!!!......")
+//                            client.shutdown()
+//                          }
+//                          case Failure(error) => {
+//                            printError(error)
+//                            client.shutdown()
+//                          }
+//                        }
                       }
                       else {
                         println("... no numbers fulfilled. ...")
@@ -197,22 +197,37 @@ object Main extends Logging {
 
   def main(args: Array[String]) {
 
-
-    val dialplan = """<dialplan name="Root">
-                     |	<menu name="main_menu" maxDigits="1" timeout="3500">
-                     |		<play type="tts" voice="female2">Hey! Press 1 if you want me to tell you off. Press 2 if you want me to transfer you to Latte or Daniel</play>
-                     |		<keypress pressed="2">
-                     |			<transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" screen="true" whisper-tts="yyyyYo yo yo press 1 if you want to take this here call, son!">
-                     |        12132228559,13107738288
-                     |      </transfer>
-                     |		</keypress>
-                     |		<keypress pressed="1">
-                     |			<play name="ethnic_woman_talking_shit" type="tts" voice="spanish1">Hijo de to pinchi madre. Vete a la puta verga, pendejo!</play>
-                     |		</keypress>
-                     |	</menu>
-                     |</dialplan>
-                     | """.stripMargin('|')
-
+//    client.activateNumber(null, null)
+//    val dialplan = <dialplan name="Root">
+//                     	<menu name="main_menu" maxDigits="1" timeout="3500">
+//                     		<play type="tts" voice="female2">1 2 3 and to the 4. snoop doggy dog and doctor dre is at the door</play>
+//                     		<keypress pressed="2">
+//                     			<transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" screen="true" whisper-tts="yyyyYo yo yo press 1 if you want to take this here call, son!">
+//                             12132228559,13107738288
+//                           </transfer>
+//                     		</keypress>
+//                     		<keypress pressed="1">
+//                     			<play name="ethnic_woman_talking_shit" type="tts" voice="spanish1">Hijo de to pinchi madre. Vete a la puta verga, pendejo!</play>
+//                     		</keypress>
+//                     	</menu>
+//                     </dialplan>
+//
+//
+//    val inboundConfiguration = InboundIvrConfiguration(dialplan.some, 12123123123L.some)
+//    val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
+//    val number = PhoneNumber(12134540863L, "", false, None, None, None, configuration.some)
+//    client.configureNumber(number) onComplete {
+//      case Success(s) => {
+//        println(s)
+//        client.shutdown()
+//      }
+//      case Failure(error) => {
+//        printError(error)
+//        client.shutdown()
+//      }
+//    }
+  }
+}
 
 //    client.getNumber(PhoneNumber(number)) onComplete {
 //      case Success(phoneNumber) => {
@@ -270,5 +285,5 @@ object Main extends Logging {
 //        client.shutdown()
 //      }
 //    }
-  }
-}
+  //}
+//}
