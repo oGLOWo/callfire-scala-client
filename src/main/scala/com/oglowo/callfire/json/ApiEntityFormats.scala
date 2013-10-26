@@ -231,6 +231,7 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
           case _ => None
         }
 
+        if (inboundCallConfigurationType.isDefined) {
         fields.get("InboundCallConfiguration") match {
           case Some(JsObject(iccFields)) => {
             inboundCallConfigurationType match {
@@ -286,6 +287,9 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
             }
           }
           case _ => deserializationError("Failure deserializing NumberConfiguration because it did not have an InboundCallConfiguration object")
+        }}
+        else {
+          PhoneNumberConfiguration(callFeature, textFeature, None)
         }
       }
       case _ => deserializationError("Failed to deserialize PhoneNumberConfiguration because it was not a JsonObject")
@@ -322,10 +326,11 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
     ))
 
     def parsePhoneNumber(resourceJson: JsObject): PhoneNumber = {
+      logger.debug("Here is the json that we get: " + resourceJson)
       val entityJson = resourceJson.getFields("Number").head.asJsObject
       val fields = entityJson.getFields("Number", "NationalFormat", "TollFree")
       fields match {
-        case Seq(JsNumber(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
+        case Seq(JsString(number), JsString(nationalFormat), JsBoolean(tollFree)) => {
           val region: Option[Region] = entityJson.fields.get("Region") match {
             case Some(regionJson) => Option(regionJson.convertTo[Region])
             case _ => None

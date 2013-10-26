@@ -19,6 +19,7 @@ import java.nio.ByteBuffer
 import org.joda.money.{CurrencyUnit, Money}
 import akka.dispatch.Futures
 import java.nio.charset.Charset
+import akka.actor.Cancellable
 
 object Main extends Logging {
   val client = new Client with ProductionRunscopeClientConnection
@@ -35,21 +36,19 @@ object Main extends Logging {
   }
 
   def runTryPurchaseAndConfigureNumber(client: Client, prefix: Int, city: String, count: Int) = {
-    val dialplan = """<dialplan name="Root">
-                     |	<menu name="main_menu" maxDigits="1" timeout="3500">
-                     |		<play type="tts" voice="female2">Hey! Press 1 if you want me to tell you off. Press 2 if you want me to transfer you to Latte or Daniel</play>
-                     |		<keypress pressed="2">
-                     |			<transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" screen="true" whisper-tts="yyyyYo yo yo press 1 if you want to take this here call, son!">
-                     |        12132228559,13107738288
-                     |      </transfer>
-                     |		</keypress>
-                     |		<keypress pressed="1">
-                     |			<play name="ethnic_woman_talking_shit" type="tts" voice="spanish1">Hijo de to pinchi madre. Vete a la puta verga, pendejo!</play>
-                     |		</keypress>
-                     |	</menu>
-                     |</dialplan>
-                     | """.stripMargin('|')
-
+    val dialplan = <dialplan name="Root">
+      <menu name="main_menu" maxDigits="1" timeout="3500">
+        <play type="tts" voice="female2">1 2 3 and to the 4. snoop doggy dog and doctor dre is at the door</play>
+        <keypress pressed="2">
+          <transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" screen="true" whisper-tts="yyyyYo yo yo press 1 if you want to take this here call, son!">
+            12132228559,13107738288
+          </transfer>
+        </keypress>
+        <keypress pressed="1">
+          <play name="ethnic_woman_talking_shit" type="tts" voice="spanish1">Hijo de to pinchi madre. Vete a la puta verga, pendejo!</play>
+        </keypress>
+      </menu>
+    </dialplan>
 
     println(s"Searching for $count max numbers with prefix $prefix in $city")
     client.searchForNumbers(implicitly[Min4DigitInt](prefix).some, city.some, count) onComplete {
@@ -89,7 +88,27 @@ object Main extends Logging {
                     case Some(orderItem) => {
                       if (!orderItem.itemsFulfilled.isEmpty) {
                         println(".... LOOKS LIKE WE FULFILLED YOUR ORDER ....")
-                        println(".... Configuring your number after 10 seconds ...")
+                        val inboundConfiguration = InboundIvrConfiguration(dialplan.some, number.number.some)
+                        val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
+                        client.activateNumber(number, PhoneNumber("12134485916")).onComplete({
+                          case Success(activatedNumber) => {
+                            client.configureNumber(activatedNumber.copy(configuration = configuration.some)) onComplete {
+                              case Success(s) => {
+                                println(".... OK try to call your number " + s.nationalFormat + " now")
+                                client.shutdown()
+                              }
+                              case Failure(error) => {
+                                printError(error)
+                                client.shutdown()
+                              }
+                            }
+                          }
+                          case Failure(error) => {
+                            printError(error)
+                            client.shutdown()
+                          }
+                        })
+
 
 //                        Thread.sleep(10000)
 //                        client.multipartPut(s"/api/1.1/rest/number/${number.number}.json", Some(Map(
@@ -197,35 +216,15 @@ object Main extends Logging {
 
   def main(args: Array[String]) {
 
-//    client.activateNumber(null, null)
-//    val dialplan = <dialplan name="Root">
-//                     	<menu name="main_menu" maxDigits="1" timeout="3500">
-//                     		<play type="tts" voice="female2">1 2 3 and to the 4. snoop doggy dog and doctor dre is at the door</play>
-//                     		<keypress pressed="2">
-//                     			<transfer name="transfer_adrian" callerid="${call.callerid}" mode="ringall" screen="true" whisper-tts="yyyyYo yo yo press 1 if you want to take this here call, son!">
-//                             12132228559,13107738288
-//                           </transfer>
-//                     		</keypress>
-//                     		<keypress pressed="1">
-//                     			<play name="ethnic_woman_talking_shit" type="tts" voice="spanish1">Hijo de to pinchi madre. Vete a la puta verga, pendejo!</play>
-//                     		</keypress>
-//                     	</menu>
-//                     </dialplan>
-//
-//
-//    val inboundConfiguration = InboundIvrConfiguration(dialplan.some, 12123123123L.some)
-//    val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
-//    val number = PhoneNumber(12134540863L, "", false, None, None, None, configuration.some)
-//    client.configureNumber(number) onComplete {
-//      case Success(s) => {
-//        println(s)
-//        client.shutdown()
-//      }
-//      case Failure(error) => {
-//        printError(error)
-//        client.shutdown()
-//      }
-//    }
+//    import com.oglowo.callfire.callfirexml.tags._
+//    DialPlan(body = Seq(Play(playType = UrlPlayType, voice = FemaleOneVoice.some, cache = false, body = Seq(
+//      Menu(body = Seq(KeyPress(pressed = `1`, body = Seq(Transfer(callerId = PhoneNumber("12134485916").left, )))))
+//    ))))
+    val prefix = args(0)
+    val city = args(1)
+    val count = args(2)
+
+    runTryPurchaseAndConfigureNumber(client, prefix.toInt, city, count.toInt)
   }
 }
 
@@ -241,11 +240,7 @@ object Main extends Logging {
 //    }
 
     //runBulkOrderPurchase(purchaseMap)
-//    val prefix = args(0)
-//    val city = args(1)
-//    val count = args(2)
 
-    //runTryPurchaseAndConfigureNumber(client, prefix.toInt, city, count.toInt)
 
 //    client.recordSoundViaPhone(PhoneNumber(12134485916L), "Console Test".some) onComplete {
 //      case Success(reference) => {

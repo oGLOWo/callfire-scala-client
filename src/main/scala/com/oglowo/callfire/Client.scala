@@ -2,7 +2,7 @@ package com.oglowo.callfire
 
 import akka.util.Timeout
 import scala.concurrent.{Await, ExecutionContext, Future}
-import akka.actor.{ActorSystem}
+import akka.actor.{Cancellable, ActorSystem}
 import akka.pattern.ask
 import akka.io.IO
 import spray.http._
@@ -275,12 +275,32 @@ trait Client {
 
   // This is a hack to active a newly purchased number since it needs to receive 2 phone calls
   // in order for it to accept any configuration via PUT /number/{Number}
-//  def activateNumber(number: PhoneNumber, fromNumber: PhoneNumber) = {
-//
-//    actorSystem.scheduler.scheduleOnce(5.seconds) {
-//      println("HELLO")
-//    }
-//  }
+  def activateNumber(number: PhoneNumber, fromNumber: PhoneNumber): Future[PhoneNumber] = {
+    Iterator.continually({val result = Await.result(getNumber(number), 30.seconds);result}).takeWhile(theNumber => {
+      val callFeature = theNumber.configuration.get.callFeature.get
+      callFeature != DisabledPhoneNumberFeature && callFeature != EnabledPhoneNumberFeature
+    }).foreach(p => {
+      println("Sending activation calls now...")
+      val requestId = UUID.randomUUID.toString
+      post("call.json", Map(
+        "To" -> p.number.toString,
+        "Type" -> "VOICE",
+        "BroadcastName" -> s"activation-${number.number}-$requestId",
+        "RequestId" -> requestId,
+        "LiveSoundText" -> "Vonjour Activation Hack. Vonjour Activation Hack.",
+        "MachineSoundText" -> "Vonjour Machine Activation Hack. Vonjour Machine Activation Hack.",
+        "From" -> fromNumber.number.toString,
+        "MaxAttempts" -> "3",
+        "RetryResults" -> "LA,AM,BUSY,DNC,XFER,XFER_LEG,NO_ANS,UNDIALED,SENT,RECEIVED,DNT,TOO_BIG,INTERNAL_ERROR,CARRIER_ERROR,CARRIER_TEMP_ERROR"
+      ).some) onComplete {
+        case Success(response) => println(s"The response is: ${response.entity.asString(HttpCharsets.`UTF-8`).asJson}")
+        case Failure(error) => println("trying to send activation call", error)
+      }
+      Thread.sleep(5000)
+    })
+    println("I AM SENDING THE BLOODY NUMBER FUTURE NOW")
+    getNumber(number)
+  }
 
   def shutdown(): Unit = {
     IO(Http)(system).ask(Http.CloseAll)(1.seconds).await

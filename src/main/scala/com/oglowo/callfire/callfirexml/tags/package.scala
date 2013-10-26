@@ -2,6 +2,7 @@ package com.oglowo.callfire.callfirexml
 
 import scala.xml._
 import spray.http.Uri
+import com.oglowo.callfire.entity.PhoneNumber
 
 package object tags {
   abstract class CallFireXmlTag(val name: Option[String],
@@ -54,9 +55,95 @@ package object tags {
   case object FemaleTwoVoice extends Voice { val value = "female2" }
   case object FemaleSpanishVoice extends Voice { val value = "femaleSpanish" }
 
-//  case class Play(override val name: Option[String] = None, playType: PlayType, voice: Option[Voice] = None, cache: Boolean)
-//    extends CallFireXmlTag(name = name,
-//      label = "play",
-//      tagAttributes = Map("name" -> name, "type" -> playType, "voice" -> voice, "cache" -> cache),
-//      )
+  case class Play(override val name: Option[String] = None, playType: PlayType, voice: Option[Voice] = None, cache: Boolean, override val body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(name = name,
+      label = "play",
+      tagAttributes = Map("name" -> name, "type" -> playType, "voice" -> voice, "cache" -> cache),
+      body = body)
+
+  class KeyPressKey(val value: String) {
+    require(KeyPressKey.ValidKeys.contains(value))
+  }
+  object KeyPressKey {
+    val ValidKeys = Set("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "#", "Default", "Timeout")
+  }
+
+  case object `0` extends KeyPressKey("0")
+  case object `1` extends KeyPressKey("1")
+  case object `2` extends KeyPressKey("2")
+  case object `3` extends KeyPressKey("3")
+  case object `4` extends KeyPressKey("4")
+  case object `5` extends KeyPressKey("5")
+  case object `6` extends KeyPressKey("6")
+  case object `7` extends KeyPressKey("7")
+  case object `8` extends KeyPressKey("8")
+  case object `9` extends KeyPressKey("9")
+  case object `*` extends KeyPressKey("*")
+  case object `#` extends KeyPressKey("#")
+  case object `Default` extends KeyPressKey("Default")
+  case object `Timeout` extends KeyPressKey("Timeout")
+
+  case class KeyPress(override val name: Option[String] = None, pressed: KeyPressKey, override val body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(name = name,
+      label = "keypress",
+      tagAttributes = Map("pressed" -> pressed.value),
+      body = body)
+
+  case class SetVar(override val name: Option[String] = None, variableName: String, override val body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(name = name,
+      label = "setvar",
+      tagAttributes = Map("name" -> name, "varname" -> variableName),
+      body = body)
+
+  case class Get(override val name: Option[String] = None, variableName: String, override val body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(name = name,
+      label = "get",
+      tagAttributes = Map("name" -> name, "varname" -> variableName),
+      body = body)
+
+  case class Record(override val name: Option[String] = None, variableName: String, background: Boolean = true, timeoutMilliseconds: Option[Long], override val body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(name = name,
+      label = "record",
+      tagAttributes = Map("name" -> name, "varname" -> variableName, "background" -> background, "timeout" -> timeoutMilliseconds),
+      body = body)
+
+  class MusicOnHold(val value: String) {
+    require(MusicOnHold.ValidValues.contains(value))
+  }
+  object MusicOnHold {
+    val ValidValues = Set("silence", "default")
+  }
+
+  case object Silence extends MusicOnHold("silence")
+  case object DefaultMusic extends MusicOnHold("default")
+
+  class RingMode(val value: String) {
+    require(RingMode.ValidValues.contains(value))
+  }
+  object RingMode {
+    val ValidValues = Set("waterfall", "ringall")
+  }
+
+  case object WaterfallRingMode extends RingMode("waterfall")
+  case object RingAllRingMode extends RingMode("ringall")
+
+  case class Expression(value: String)
+
+  case class Transfer(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, override val body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(name = name,
+      label = "transfer",
+      tagAttributes = Map(
+        "name" -> name,
+        "callerid" -> { callerId match {
+          case Left(number) => number.number.toString
+          case Right(expression) => expression.value
+        }},
+        "calleridalpha" -> callerIdAlpha,
+        "musiconhold" -> musicOnHold.value,
+        "continue-after" -> continueAfter,
+        "mode" -> ringMode.value,
+        "timeout" -> timeoutSeconds,
+        "whisper-tts" -> whisperTextToSpeech
+      ),
+      body = body)
 }
