@@ -1,0 +1,17 @@
+<dialplan loggingEnabled="true">
+    <menu>
+        <play cache="false" voice="female2" type="tts">You've reached Lattes House of fun. To reach Sales, press 1. To
+            reach Saupport, press 2
+        </play>
+        <keypress pressed="1">
+            <transfer musiconhold="default" mode="ringall" callerid="${call.callerid}" continue-after="false">
+                12134485916
+            </transfer>
+        </keypress>
+        <keypress pressed="2">
+            <transfer musiconhold="default" mode="ringall" callerid="${call.callerid}" continue-after="false">
+                12132228559, 12134485916
+            </transfer>
+        </keypress>
+    </menu>
+</dialplan>

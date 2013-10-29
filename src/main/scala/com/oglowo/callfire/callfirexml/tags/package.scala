@@ -135,7 +135,7 @@ package object tags {
 
   case class Expression(value: String)
 
-  case class Transfer(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, override val body: Seq[CallFireXmlTag])
+  case class Transfer(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, numbers: Set[PhoneNumber] = Set.empty)
     extends CallFireXmlTag(name = name,
       label = "transfer",
       tagAttributes = Map(
@@ -151,6 +151,6 @@ package object tags {
         "timeout" -> timeoutSeconds,
         "whisper-tts" -> whisperTextToSpeech
       ),
-      body = body)
+      body = Seq(Text(numbers.map(_.number.toString).mkString(", "))))
 
 }
