@@ -13,6 +13,8 @@ package object tags {
                                 override val minimizeEmpty: Boolean = false,
                                 val body: Seq[Node] = Seq.empty) extends Elem(tagPrefix.orNull, label, metadata(tagAttributes), scope, minimizeEmpty, body:_*)
 
+  abstract class CallFireTextTag[T](content: T) extends Text(content.toString)
+
   case class DialPlan(override val name: Option[String] = None, loggingEnabled: Boolean = true, override val body: Seq[CallFireXmlTag])
     extends CallFireXmlTag(name = name,
       label = "dialplan",
@@ -55,11 +57,15 @@ package object tags {
   case object FemaleTwoVoice extends Voice { val value = "female2" }
   case object FemaleSpanishVoice extends Voice { val value = "femaleSpanish" }
 
-  case class Play(override val name: Option[String] = None, playType: PlayType, voice: Option[Voice] = None, cache: Boolean, override val body: Seq[CallFireXmlTag])
+  case class UriNode(uri: Uri) extends CallFireTextTag[Uri](uri)
+  case class TtsNode(content: String) extends CallFireTextTag[String](content)
+  case class SoundIdNode(id: Long) extends CallFireTextTag[Long](id)
+
+  case class Play(override val name: Option[String] = None, playType: PlayType, voice: Option[Voice] = None, cache: Boolean, content: CallFireTextTag[_])
     extends CallFireXmlTag(name = name,
       label = "play",
       tagAttributes = Map("name" -> name, "type" -> playType, "voice" -> voice, "cache" -> cache),
-      body = body)
+      body = Seq(content))
 
   class KeyPressKey(val value: String) {
     require(KeyPressKey.ValidKeys.contains(value))
@@ -146,4 +152,5 @@ package object tags {
         "whisper-tts" -> whisperTextToSpeech
       ),
       body = body)
+
 }

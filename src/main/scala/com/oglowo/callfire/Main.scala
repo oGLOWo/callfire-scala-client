@@ -108,25 +108,6 @@ object Main extends Logging {
                             client.shutdown()
                           }
                         })
-
-
-//                        Thread.sleep(10000)
-//                        client.multipartPut(s"/api/1.1/rest/number/${number.number}.json", Some(Map(
-//                          "CallFeature" -> ("text/plain", "ENABLED"),
-//                          "TextFeature" -> ("text/plain", "DISABLED"),
-//                          "InboundCallConfigurationType" -> ("text/plain", "IVR"),
-//                          "IvrInboundConfig[id]" -> ("text/plain", "the-grande-ivr"),
-//                          "DialplanXml" -> ("application/xml", dialplan.getBytes("UTF-8"))
-//                        ))) onComplete {
-//                          case Success(configureResponse) => {
-//                            println(".....!!!! OK Please call " + number.nationalFormat + " to test it out !!!!......")
-//                            client.shutdown()
-//                          }
-//                          case Failure(error) => {
-//                            printError(error)
-//                            client.shutdown()
-//                          }
-//                        }
                       }
                       else {
                         println("... no numbers fulfilled. ...")
