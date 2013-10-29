@@ -6,13 +6,14 @@ import akka.actor.{ActorSystem, ActorRef}
 import akka.pattern.ask
 import spray.util._
 import akka.util.Timeout
+import akka.util.Timeout._
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 
 trait ProductionRunscopeClientConnection extends ClientConnection {
   implicit val system: ActorSystem = ActorSystem("callfire-scala-spray-client")
   implicit val context: ExecutionContext = system.dispatcher
-  implicit val timeout: Timeout = 30.seconds
+  implicit val timeout: Timeout = 360.seconds
 
   // DO NOT commit and push the credentials out to github since this bitch is open source.
   // You don't want to give the world access to your CallFire account because that might

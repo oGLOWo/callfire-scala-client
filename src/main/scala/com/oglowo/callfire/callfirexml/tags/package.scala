@@ -64,7 +64,7 @@ package object tags {
   case class Play(override val name: Option[String] = None, playType: PlayType, voice: Option[Voice] = None, cache: Boolean, content: CallFireTextTag[_])
     extends CallFireXmlTag(name = name,
       label = "play",
-      tagAttributes = Map("name" -> name, "type" -> playType, "voice" -> voice, "cache" -> cache),
+      tagAttributes = Map("name" -> name, "type" -> playType.value, "voice" -> voice.map(_.value), "cache" -> cache),
       body = Seq(content))
 
   class KeyPressKey(val value: String) {
