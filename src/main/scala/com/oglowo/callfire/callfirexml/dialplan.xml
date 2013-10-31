@@ -1,17 +1,28 @@
 <dialplan loggingEnabled="true">
     <menu>
-        <play cache="false" voice="female2" type="tts">You've reached Lattes House of fun. To reach Sales, press 1. To
-            reach Saupport, press 2
+        <play cache="false" type="url">
+            https://us-east.manta.joyent.com/vonjourvoix/public/default-organization-main-greeting-16bit8khzmono.wav
         </play>
         <keypress pressed="1">
-            <transfer musiconhold="default" mode="ringall" callerid="${call.callerid}" continue-after="false">
-                12134485916
-            </transfer>
+            <play cache="false" type="url">
+                https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav
+            </play>
+            <record background="false" varname="voicemail-recording"></record>
+            <play cache="false" type="url">${voicemail-recording}</play>
         </keypress>
         <keypress pressed="2">
-            <transfer musiconhold="default" mode="ringall" callerid="${call.callerid}" continue-after="false">
-                12132228559, 12134485916
-            </transfer>
+            <play cache="false" type="url">
+                https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav
+            </play>
+            <record background="false" varname="voicemail-recording"></record>
+            <play cache="false" type="url">${voicemail-recording}</play>
+        </keypress>
+        <keypress pressed="0">
+            <play cache="false" type="url">
+                https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav
+            </play>
+            <record background="false" varname="voicemail-recording"></record>
+            <play cache="false" type="url">${voicemail-recording}</play>
         </keypress>
     </menu>
 </dialplan>

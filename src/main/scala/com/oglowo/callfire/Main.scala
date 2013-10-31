@@ -201,13 +201,94 @@ object Main extends Logging {
 //    DialPlan(body = Seq(Play(playType = UrlPlayType, voice = FemaleOneVoice.some, cache = false, body = Seq(
 //      Menu(body = Seq(KeyPress(pressed = `1`, body = Seq(Transfer(callerId = PhoneNumber("12134485916").left, )))))
 //    ))))
-    val prefix = args(0)
-    val city = args(1)
-    val count = args(2)
+//    val prefix = args(0)
+//    val city = args(1)
+//    val count = args(2)
+//
+//    runTryPurchaseAndConfigureNumber(client, prefix.toInt, city, count.toInt)
+    val dialplan =
+  <dialplan name="Root">
+    <menu>
+      <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-organization-main-greeting-16bit8khzmono.wav</play>
+      <keypress pressed="1">
+        <menu>
+          <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav</play>
+          <record varname="voicemail_recording_sales" name="recording_sales"/>
+          <play type="url" cache="false" name="voicemail_options_sales">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-options-16bit8khzmono.wav</play>
+          <keypress pressed="1">
+            <play type="url" cache="false">${{voicemail_recording}}</play>
+            <goto>voicemail_options_sales</goto>
+          </keypress>
+          <keypress pressed="2">
+            <play type="tts">This shit will now send</play>
+            <post name="voicemail_poster_sales" varname="turtles_sales">http://172.248.127.100:8080/groups/4b07f790-40d2-11e3-812b-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording_sales}}</post>
+            <play type="tts">Big booty hoes! Here is the response from the server for sales vm send${{turtles_sales}}</play>
+          </keypress>
+          <keypress pressed="3">
+            <goto>recording_sales</goto>
+          </keypress>
+        </menu>
+      </keypress>
+      <keypress pressed="2">
+        <menu>
+          <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav</play>
+          <record varname="voicemail_recording_support" name="recording_support"/>
+          <play type="url" cache="false" name="voicemail_options_support">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-options-16bit8khzmono.wav</play>
+          <keypress pressed="1">
+            <play type="url" cache="false">${{voicemail_recording_support}}</play>
+            <goto>voicemail_options_support</goto>
+          </keypress>
+          <keypress pressed="2">
+            <play type="tts">This shit will now send</play>
+            <post name="voicemail_poster_support" varname="turtles_support">http://172.248.127.100:8080/groups/5459adc0-40d2-11e3-812b-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording_support}}</post>
+            <play type="tts">Big booty hoes! Here is the response from the server for support vm send ${{turtles_support}}</play>
+          </keypress>
+          <keypress pressed="3">
+            <goto>recording_support</goto>
+          </keypress>
+        </menu>
+      </keypress>
+      <keypress pressed="0">
+        <menu>
+          <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav</play>
+          <record varname="voicemail_recording" name="recording"/>
+          <play type="url" cache="false" name="voicemail_options">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-options-16bit8khzmono.wav</play>
+          <keypress pressed="1">
+            <play type="url" cache="false">${{voicemail_recording}}</play>
+          </keypress>
+          <keypress pressed="2">
+            <play type="tts">This shit will now send</play>
+            <post name="voicemail_poster" varname="turtles">http://172.248.127.100:8080/groups/c8f4fcf0-40d4-11e3-aa37-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording}}</post>
+            <play type="tts">Big booty hoes! Here is the response from the server for operator vm send ${{turtles}}</play>
+          </keypress>
+          <keypress pressed="3">
+            <goto>recording</goto>
+          </keypress>
+        </menu>
+      </keypress>
+    </menu>
+  </dialplan>
 
-    runTryPurchaseAndConfigureNumber(client, prefix.toInt, city, count.toInt)
+
+
+    val phoneNumber = PhoneNumber(args(0))
+    val inboundConfiguration = InboundIvrConfiguration(dialplan.some, phoneNumber.number.some)
+    val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
+
+    val modifiedPhoneNumber = phoneNumber.copy(configuration = configuration.some)
+    client.configureNumber(modifiedPhoneNumber) onComplete {
+      case Success(number) => {
+        println("The newly configured number is " + number)
+        client.shutdown()
+      }
+      case Failure(error) => {
+        printError(error)
+        client.shutdown()
+      }
+    }
   }
 }
+
 
 //    client.getNumber(PhoneNumber(number)) onComplete {
 //      case Success(phoneNumber) => {

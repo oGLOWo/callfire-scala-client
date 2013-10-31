@@ -41,7 +41,7 @@ package object tags {
     def withName(name: String) = values.find(_.value == name).get
   }
   case object CallFireIdPlayType extends PlayType { val value = "callfireid" }
-  case object UrlPlayType extends PlayType { val value = "URL" }
+  case object UrlPlayType extends PlayType { val value = "url" }
   case object TtsPlayType extends PlayType { val value = "tts" }
 
   sealed trait Voice {
@@ -107,11 +107,10 @@ package object tags {
       tagAttributes = Map("name" -> name, "varname" -> variableName),
       body = body)
 
-  case class Record(override val name: Option[String] = None, variableName: String, background: Boolean = true, timeoutMilliseconds: Option[Long], override val body: Seq[CallFireXmlTag])
+  case class Record(override val name: Option[String] = None, variableName: String, background: Boolean = true, timeoutMilliseconds: Option[Long] = None)
     extends CallFireXmlTag(name = name,
       label = "record",
-      tagAttributes = Map("name" -> name, "varname" -> variableName, "background" -> background, "timeout" -> timeoutMilliseconds),
-      body = body)
+      tagAttributes = Map("name" -> name, "varname" -> variableName, "background" -> background, "timeout" -> timeoutMilliseconds))
 
   class MusicOnHold(val value: String) {
     require(MusicOnHold.ValidValues.contains(value))
@@ -133,7 +132,7 @@ package object tags {
   case object WaterfallRingMode extends RingMode("waterfall")
   case object RingAllRingMode extends RingMode("ringall")
 
-  case class Expression(value: String)
+  case class Expression(value: String) extends CallFireTextTag[String](value)
 
   case class Transfer(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, numbers: Set[PhoneNumber] = Set.empty)
     extends CallFireXmlTag(name = name,
