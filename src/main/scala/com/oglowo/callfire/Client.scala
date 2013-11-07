@@ -273,6 +273,10 @@ trait Client {
     get(s"call/sound/$id.$extension").as(BasicUnmarshallers.ByteArrayUnmarshaller)
   }
 
+  def getCall(id: Long): Future[Call] = {
+    get(s"call/$id.json").as[Call]
+  }
+
   // This is a hack to active a newly purchased number since it needs to receive 2 phone calls
   // in order for it to accept any configuration via PUT /number/{Number}
   def activateNumber(number: PhoneNumber, fromNumber: PhoneNumber): Future[PhoneNumber] = {

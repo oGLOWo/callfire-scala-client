@@ -51,7 +51,8 @@ object Main extends Logging {
     </dialplan>
 
     println(s"Searching for $count max numbers with prefix $prefix in $city")
-    client.searchForNumbers(implicitly[Min4DigitInt](prefix).some, city.some, count) onComplete {
+    //client.searchForNumbers(implicitly[Min4DigitInt](prefix).some, city.some, count) onComplete {
+    client.searchForTollFreeNumbers(implicitly[Min4DigitInt](prefix).some, count) onComplete {
       case Success(response) => {
         if (!response.isEmpty) {
           println("[[[ NUMBERS FOUND ]]]")
@@ -84,30 +85,23 @@ object Main extends Logging {
                     }
                   }
 
-                  theOrder.localNumbers match {
+                  theOrder.tollFreeNumbers match {
                     case Some(orderItem) => {
                       if (!orderItem.itemsFulfilled.isEmpty) {
                         println(".... LOOKS LIKE WE FULFILLED YOUR ORDER ....")
                         val inboundConfiguration = InboundIvrConfiguration(dialplan.some, number.number.some)
                         val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
-                        client.activateNumber(number, PhoneNumber("12134485916")).onComplete({
-                          case Success(activatedNumber) => {
-                            client.configureNumber(activatedNumber.copy(configuration = configuration.some)) onComplete {
-                              case Success(s) => {
-                                println(".... OK try to call your number " + s.nationalFormat + " now")
-                                client.shutdown()
-                              }
-                              case Failure(error) => {
-                                printError(error)
-                                client.shutdown()
-                              }
-                            }
+                        val theNumber = orderItem.itemsFulfilled(0).copy(configuration = configuration.some)
+                        client.configureNumber(theNumber) onComplete {
+                          case Success(s) => {
+                            println(".... OK try to call your number " + s.nationalFormat + " now")
+                            client.shutdown()
                           }
                           case Failure(error) => {
                             printError(error)
                             client.shutdown()
                           }
-                        })
+                        }
                       }
                       else {
                         println("... no numbers fulfilled. ...")
@@ -211,6 +205,7 @@ object Main extends Logging {
     <menu>
       <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-organization-main-greeting-16bit8khzmono.wav</play>
       <keypress pressed="1">
+        <transfer musiconhold="default" mode="waterfall" callerid="${call.callerid}" continue-after="true" screen="true" timeout="30" whisper-tts="Call for the Sales Department. Press 1 to accept">12134485916, 12139154569, 19514030229</transfer>
         <menu>
           <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav</play>
           <record varname="voicemail_recording_sales" name="recording_sales"/>
@@ -221,7 +216,7 @@ object Main extends Logging {
           </keypress>
           <keypress pressed="2">
             <play type="tts">This shit will now send</play>
-            <post name="voicemail_poster_sales" varname="turtles_sales">http://172.248.127.100:8080/groups/4b07f790-40d2-11e3-812b-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording_sales}}</post>
+            <post name="voicemail_poster_sales" varname="turtles_sales">http://19257835.ngrok.com/groups/c023d010-4403-11e3-a4dd-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording_sales}}</post>
             <play type="tts">Big booty hoes! Here is the response from the server for sales vm send${{turtles_sales}}</play>
           </keypress>
           <keypress pressed="3">
@@ -240,7 +235,7 @@ object Main extends Logging {
           </keypress>
           <keypress pressed="2">
             <play type="tts">This shit will now send</play>
-            <post name="voicemail_poster_support" varname="turtles_support">http://172.248.127.100:8080/groups/5459adc0-40d2-11e3-812b-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording_support}}</post>
+            <post name="voicemail_poster_support" varname="turtles_support">http://19257835.ngrok.com/groups/c023d010-4403-11e3-a4dd-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording_support}}</post>
             <play type="tts">Big booty hoes! Here is the response from the server for support vm send ${{turtles_support}}</play>
           </keypress>
           <keypress pressed="3">
@@ -258,7 +253,7 @@ object Main extends Logging {
           </keypress>
           <keypress pressed="2">
             <play type="tts">This shit will now send</play>
-            <post name="voicemail_poster" varname="turtles">http://172.248.127.100:8080/groups/c8f4fcf0-40d4-11e3-aa37-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording}}</post>
+            <post name="voicemail_poster" varname="turtles">http://19257835.ngrok.com/groups/c023d010-4403-11e3-a4dd-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording}}</post>
             <play type="tts">Big booty hoes! Here is the response from the server for operator vm send ${{turtles}}</play>
           </keypress>
           <keypress pressed="3">
@@ -286,6 +281,17 @@ object Main extends Logging {
         client.shutdown()
       }
     }
+//    val callId = args(0).toLong
+//    client.getCall(callId) onComplete {
+//      case Success(s) => {
+//        client.shutdown()
+//        println("BONERS: " + s)
+//      }
+//      case Failure(error) => {
+//        printError(error)
+//        client.shutdown()
+//      }
+//    }
   }
 }
 

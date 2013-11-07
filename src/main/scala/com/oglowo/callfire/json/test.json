@@ -1,0 +1,27 @@
+{"Resource": {
+    "Number": {
+        "Number": "12134711017",
+        "NationalFormat": "(213) 471-1017",
+        "TollFree": false,
+        "Region": {
+            "Prefix": "1213471",
+            "City": "LOS ANGELES",
+            "State": "CA",
+            "Zipcode": "90010",
+            "Country": "US",
+            "Lata": "730",
+            "RateCenter": "LSAN DA 10",
+            "Latitude": 34.0587,
+            "Longitude": -118.282,
+            "TimeZone": "America/Los_Angeles"
+        },
+        "Status": "PENDING",
+        "LeaseInfo": {
+            "AutoRenew": true
+        },
+        "NumberConfiguration": {
+            "CallFeature": "PENDING",
+            "TextFeature": "PENDING"
+        }
+    }
+}}
