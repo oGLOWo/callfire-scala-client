@@ -273,6 +273,8 @@ trait Client {
     get(s"call/sound/$id.$extension").as(BasicUnmarshallers.ByteArrayUnmarshaller)
   }
 
+  def getCallRecording
+
   def getCall(id: Long): Future[Call] = {
     get(s"call/$id.json").as[Call]
   }
