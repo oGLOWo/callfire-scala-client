@@ -22,5 +22,15 @@ case class Call(id: Long,
       case true => None
     }
   }
+
+  def voicemailRecordingId: Option[Long] = {
+    callRecords.isEmpty match {
+      case false => callRecords.head.recordingsMetaData.isEmpty match {
+        case false => Some(callRecords.head.recordingsMetaData.head.id)
+        case true => None
+      }
+      case true => None
+    }
+  }
 }
 
