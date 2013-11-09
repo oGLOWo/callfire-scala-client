@@ -273,7 +273,17 @@ trait Client {
     get(s"call/sound/$id.$extension").as(BasicUnmarshallers.ByteArrayUnmarshaller)
   }
 
-  def getCallRecording
+  def getVoicemailSoundFromCall(call: Call, soundType: SoundType = Mp3SoundType): Future[Array[Byte]] = {
+    val extension = soundType match {
+      case Mp3SoundType => "mp3"
+      case WavSoundType =>  "wav"
+    }
+
+    call.voicemailSoundName match {
+      case Some(soundName) => get(s"call/${call.id}/$soundName.$extension").as(BasicUnmarshallers.ByteArrayUnmarshaller)
+      case None => throw new IllegalArgumentException(s"Call $call does not contain voicemail sound name")
+    }
+  }
 
   def getCall(id: Long): Future[Call] = {
     get(s"call/$id.json").as[Call]

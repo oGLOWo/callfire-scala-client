@@ -266,21 +266,37 @@ object Main extends Logging {
 
 
 
-    val phoneNumber = PhoneNumber(args(0))
-    val inboundConfiguration = InboundIvrConfiguration(dialplan.some, phoneNumber.number.some)
-    val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
+    val callId = args(0).toLong
+    val callFuture = client.getCall(callId)
 
-    val modifiedPhoneNumber = phoneNumber.copy(configuration = configuration.some)
-    client.configureNumber(modifiedPhoneNumber) onComplete {
-      case Success(number) => {
-        println("The newly configured number is " + number)
+    callFuture.flatMap(call => {
+      client.getVoicemailSoundFromCall(call)
+    }) onComplete {
+      case Success(s) => {
         client.shutdown()
+        println("Here is the data: " + s)
+        s.foreach(print)
       }
       case Failure(error) => {
-        printError(error)
         client.shutdown()
+        println("Error trying to get voicemailsound for call: " + error)
       }
     }
+//    val phoneNumber = PhoneNumber(args(0))
+//    val inboundConfiguration = InboundIvrConfiguration(dialplan.some, phoneNumber.number.some)
+//    val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
+//
+//    val modifiedPhoneNumber = phoneNumber.copy(configuration = configuration.some)
+//    client.configureNumber(modifiedPhoneNumber) onComplete {
+//      case Success(number) => {
+//        println("The newly configured number is " + number)
+//        client.shutdown()
+//      }
+//      case Failure(error) => {
+//        printError(error)
+//        client.shutdown()
+//      }
+//    }
 //    val callId = args(0).toLong
 //    client.getCall(callId) onComplete {
 //      case Success(s) => {

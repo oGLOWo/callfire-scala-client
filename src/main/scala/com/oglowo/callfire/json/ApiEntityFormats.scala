@@ -632,7 +632,12 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
           case None => deserializationError("LengthInSeconds was not present in the RecordingMeta object")
         }
 
-        RecordingMeta(id, name, createdOn, Some(lengthInSeconds))
+        val link = fields.get("Link") match {
+          case Some(JsString(s)) => Uri(s)
+          case None => deserializationError("Link was not present in the RecordingMeta object")
+        }
+
+        RecordingMeta(id, name, createdOn, link, Some(lengthInSeconds))
       }
       case default => deserializationError(s"Expecting RecordingMeta to be json object, but got ${default.getClass.getName}")
     }
