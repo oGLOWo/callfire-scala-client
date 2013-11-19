@@ -68,7 +68,7 @@ package object tags {
       body = Seq(content))
 
   class KeyPressKey(val value: String) {
-    require(KeyPressKey.ValidKeys.contains(value))
+    //require(KeyPressKey.ValidKeys.contains(value))
   }
   object KeyPressKey {
     val ValidKeys = Set("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "#", "Default", "Timeout")
@@ -134,7 +134,7 @@ package object tags {
 
   case class Expression(value: String) extends CallFireTextTag[String](value)
 
-  case class Transfer(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, numbers: Set[PhoneNumber] = Set.empty)
+  case class Transfer(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, numbers: Set[PhoneNumber] = Set.empty, screen: Boolean = false)
     extends CallFireXmlTag(name = name,
       label = "transfer",
       tagAttributes = Map(
@@ -148,8 +148,10 @@ package object tags {
         "continue-after" -> continueAfter,
         "mode" -> ringMode.value,
         "timeout" -> timeoutSeconds,
-        "whisper-tts" -> whisperTextToSpeech
+        "whisper-tts" -> whisperTextToSpeech,
+        "screen" -> screen
       ),
-      body = Seq(Text(numbers.map(_.number.toString).mkString(", "))))
-
+      body = Seq(Text(numbers.map(_.number.toString).mkString(", ")))) {
+    if (screen == true) require(whisperTextToSpeech.isDefined && !whisperTextToSpeech.get.trim.isEmpty, "If you want to screen calls, you must set the whisper tts. For example, Call from 2 1 3 4 4 8 5 9 1 6. Press 1 to accept.")
+  }
 }

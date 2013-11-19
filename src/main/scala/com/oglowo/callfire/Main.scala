@@ -205,24 +205,8 @@ object Main extends Logging {
     <menu>
       <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-organization-main-greeting-16bit8khzmono.wav</play>
       <keypress pressed="1">
-        <transfer musiconhold="default" mode="waterfall" callerid="${call.callerid}" continue-after="true" screen="true" timeout="30" whisper-tts="Call for the Sales Department. Press 1 to accept">12134485916, 12139154569, 19514030229</transfer>
-        <menu>
-          <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav</play>
-          <record varname="voicemail_recording_sales" name="recording_sales"/>
-          <play type="url" cache="false" name="voicemail_options_sales">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-options-16bit8khzmono.wav</play>
-          <keypress pressed="1">
-            <play type="url" cache="false">${{voicemail_recording}}</play>
-            <goto>voicemail_options_sales</goto>
-          </keypress>
-          <keypress pressed="2">
-            <play type="tts">This shit will now send</play>
-            <post name="voicemail_poster_sales" varname="turtles_sales">http://19257835.ngrok.com/groups/1d4138c0-483f-11e3-b2aa-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording_sales}}</post>
-            <play type="tts">Big booty hoes! Here is the response from the server for sales vm send${{turtles_sales}}</play>
-          </keypress>
-          <keypress pressed="3">
-            <goto>recording_sales</goto>
-          </keypress>
-        </menu>
+        <setvar varname="grande_burrito">salmon-butter-butt-393938883838</setvar>
+        <transfer musiconhold="default" mode="waterfall" callerid="${call.callerid}" continue-after="false" screen="true" timeout="5" whisper-tts="Call for the Sales Department. Press 1 to accept">12134485916</transfer>
       </keypress>
       <keypress pressed="2">
         <menu>
@@ -243,60 +227,61 @@ object Main extends Logging {
           </keypress>
         </menu>
       </keypress>
-      <keypress pressed="0">
-        <menu>
-          <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav</play>
-          <record varname="voicemail_recording" name="recording"/>
-          <play type="url" cache="false" name="voicemail_options">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-options-16bit8khzmono.wav</play>
-          <keypress pressed="1">
-            <play type="url" cache="false">${{voicemail_recording}}</play>
-          </keypress>
-          <keypress pressed="2">
-            <play type="tts">This shit will now send</play>
-            <post name="voicemail_poster" varname="turtles">http://19257835.ngrok.com/groups/1d4138c0-483f-11e3-b2aa-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording}}</post>
-            <play type="tts">Big booty hoes! Here is the response from the server for operator vm send ${{turtles}}</play>
-          </keypress>
-          <keypress pressed="3">
-            <goto>recording</goto>
-          </keypress>
-        </menu>
+    </menu>
+
+    <menu>
+      <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav</play>
+      <record varname="voicemail_recording_703" name="recording_703"/>
+      <play type="url" cache="false" name="voicemail_options_703">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-options-16bit8khzmono.wav</play>
+      <keypress pressed="1">
+        <play type="url" cache="false">${{voicemail_recording_703}}</play>
+        <goto>voicemail_options_703</goto>
+      </keypress>
+      <keypress pressed="2">
+        <play type="tts">This shit for user will now send with var is ${{grande_burrito}}</play>
+        <post name="voicemail_poster_703" varname="turtles_703">http://api.vonjour.com/users/${{grande_burrito}}/inbox/messages?voicemailRecordingUri=${{voicemail_recording_703}}</post>
+        <play type="tts">Big booty user hoes! Here is the response from the server for support vm send ${{turtles_703}}</play>
+      </keypress>
+      <keypress pressed="3">
+        <goto>recording_703</goto>
       </keypress>
     </menu>
+
   </dialplan>
 
 
 
-    val callId = args(0).toLong
-    val callFuture = client.getCall(callId)
-
-    callFuture.flatMap(call => {
-      client.getVoicemailSoundFromCall(call)
-    }) onComplete {
-      case Success(s) => {
-        client.shutdown()
-        println("Here is the data: " + s)
-        s.foreach(print)
-      }
-      case Failure(error) => {
-        client.shutdown()
-        println("Error trying to get voicemailsound for call: " + error)
-      }
-    }
-//    val phoneNumber = PhoneNumber(args(0))
-//    val inboundConfiguration = InboundIvrConfiguration(dialplan.some, phoneNumber.number.some)
-//    val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
+//    val callId = args(0).toLong
+//    val callFuture = client.getCall(callId)
 //
-//    val modifiedPhoneNumber = phoneNumber.copy(configuration = configuration.some)
-//    client.configureNumber(modifiedPhoneNumber) onComplete {
-//      case Success(number) => {
-//        println("The newly configured number is " + number)
+//    callFuture.flatMap(call => {
+//      client.getVoicemailSoundFromCall(call)
+//    }) onComplete {
+//      case Success(s) => {
 //        client.shutdown()
+//        println("Here is the data: " + s)
+//        s.foreach(print)
 //      }
 //      case Failure(error) => {
-//        printError(error)
 //        client.shutdown()
+//        println("Error trying to get voicemailsound for call: " + error)
 //      }
 //    }
+    val phoneNumber = PhoneNumber(args(0))
+    val inboundConfiguration = InboundIvrConfiguration(dialplan.some, phoneNumber.number.some)
+    val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
+
+    val modifiedPhoneNumber = phoneNumber.copy(configuration = configuration.some)
+    client.configureNumber(modifiedPhoneNumber) onComplete {
+      case Success(number) => {
+        println("The newly configured number is " + number)
+        client.shutdown()
+      }
+      case Failure(error) => {
+        printError(error)
+        client.shutdown()
+      }
+    }
 //    val callId = args(0).toLong
 //    client.getCall(callId) onComplete {
 //      case Success(s) => {
