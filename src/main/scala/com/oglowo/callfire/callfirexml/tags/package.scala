@@ -95,17 +95,24 @@ package object tags {
       tagAttributes = Map("pressed" -> pressed.value),
       body = body)
 
-  case class SetVar(override val name: Option[String] = None, variableName: String, override val body: Seq[CallFireXmlTag])
+  case class SetVar(override val name: Option[String] = None, variableName: String, variableValue: Expression)
     extends CallFireXmlTag(name = name,
       label = "setvar",
       tagAttributes = Map("name" -> name, "varname" -> variableName),
-      body = body)
+      body = Text(variableValue.value))
 
-  case class Get(override val name: Option[String] = None, variableName: String, override val body: Seq[CallFireXmlTag])
+  // locationUri can have CallFireXML expressions in it which is why it's not a Uri type
+  case class Get(override val name: Option[String] = None, variableName: String, locationUri: Expression)
     extends CallFireXmlTag(name = name,
       label = "get",
       tagAttributes = Map("name" -> name, "varname" -> variableName),
-      body = body)
+      body = locationUri)
+
+  case class Post(override val name: Option[String] = None, variableName: String, locationUri: Expression)
+    extends CallFireXmlTag(name = name,
+      label = "post",
+      tagAttributes = Map("name" -> name, "varname" -> variableName),
+      body = locationUri)
 
   case class Record(override val name: Option[String] = None, variableName: String, background: Boolean = true, timeoutMilliseconds: Option[Long] = None)
     extends CallFireXmlTag(name = name,
@@ -154,4 +161,38 @@ package object tags {
       body = Seq(Text(numbers.map(_.number.toString).mkString(", ")))) {
     if (screen == true) require(whisperTextToSpeech.isDefined && !whisperTextToSpeech.get.trim.isEmpty, "If you want to screen calls, you must set the whisper tts. For example, Call from 2 1 3 4 4 8 5 9 1 6. Press 1 to accept.")
   }
+
+  case class Goto(override val name: Option[String] = None, nodeName: String)
+    extends CallFireXmlTag(name = name,
+      label = "goto",
+      tagAttributes = Map("name" -> name),
+      body = Seq(Text(nodeName)))
+
+  case class If(override val name: Option[String] = None, expression: Expression, override val body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(
+      name = name,
+      label = "if",
+      tagAttributes = Map("expr" -> expression.value),
+      body = body
+    )
+
+  case class Equal(override val name: Option[String] = None, variable: Expression, expression: Expression, override val body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(
+      name = name,
+      label = "equal",
+      tagAttributes = Map(
+        "var" -> variable.value,
+        "expr" -> expression.value),
+      body = body
+    )
+
+  case class NotEqual(override val name: Option[String] = None, variable: Expression, expression: Expression, override val body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(
+      name = name,
+      label = "notEqual",
+      tagAttributes = Map(
+        "var" -> variable.value,
+        "expr" -> expression.value),
+      body = body
+    )
 }
