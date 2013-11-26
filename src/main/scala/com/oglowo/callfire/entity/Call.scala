@@ -1,6 +1,7 @@
 package com.oglowo.callfire.entity
 
 import org.joda.time.DateTime
+import scala.concurrent.duration._
 
 case class Call(id: Long,
                 from: PhoneNumber,
@@ -13,6 +14,10 @@ case class Call(id: Long,
                 finalResult:
                 Option[Result] = None,
                 callRecords: Set[CallRecord] = Set.empty) extends ApiEntity {
+  def billedDuration: Duration = (0.seconds.asInstanceOf[Duration] /: callRecords)(_ + _.billedDuration)
+
+  def billedDuration(p: (CallRecord) => Boolean): Duration = (0.seconds.asInstanceOf[Duration] /: callRecords.filter(p))(_ + _.billedDuration)
+
   def voicemailSoundName: Option[String] = {
     callRecords.isEmpty match {
       case false => callRecords.head.recordingsMetaData.isEmpty match {
