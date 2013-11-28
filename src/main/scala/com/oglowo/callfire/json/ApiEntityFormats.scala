@@ -610,10 +610,12 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
   implicit val RecordingMetaFormat = new RootJsonFormat[RecordingMeta] {
     def write(obj: RecordingMeta): JsValue = ???
 
+    // Another CallFire bug
     def read(json: JsValue): RecordingMeta = json match {
       case JsObject(fields) => {
         val id = fields.get("@id") match {
           case Some(JsNumber(n)) => n.toLong
+          case Some(JsString(s)) => s.toLong
           case None => deserializationError("@id was not present in the RecordingMeta object")
         }
 
@@ -656,6 +658,7 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
       case JsObject(fields) => {
         val id = fields.get("@id") match {
           case Some(JsNumber(n)) => n.toLong
+          case Some(JsString(s)) => s.toLong
           case None => deserializationError("@id was not present in CallRecord object")
         }
 
@@ -684,8 +687,12 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
           case None => deserializationError("Duration was not present in the CallRecord object")
         }
 
+        // Another Callfire bug here
         val recordingsMetaData = fields.get("RecordingMeta") match {
-          case Some(s) => s.convertTo[Set[RecordingMeta]]
+          case Some(s) => s match {
+            case metaArray : JsArray => metaArray.convertTo[Set[RecordingMeta]]
+            case metaObject : JsObject => Set(metaObject.convertTo[RecordingMeta])
+          }
           case None => deserializationError("RecordingMeta was not present in the CallRecord object")
         }
 
@@ -704,76 +711,110 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
   implicit val CallFormat = new RootJsonFormat[Call] {
     def write(obj: Call): JsValue = ???
 
-    def read(json: JsValue): Call = json match {
-      case JsObject(fields) => fields.get("Resource") match {
-        case Some(JsObject(resourceFields)) => resourceFields.get("Call") match {
-          case Some(JsObject(callFields)) => {
-            logger.debug("******************** " + json)
-            val id = callFields.get("@id") match {
-              case Some(JsNumber(n)) => n.toLong
-              case None => deserializationError("@id was not present in the call object")
-            }
-
-            val from = callFields.get("FromNumber") match {
-              case Some(JsString(s)) => PhoneNumber(s)
-              case None => deserializationError("FromNumber was not present in the call object")
-            }
-
-            val to = callFields.get("ToNumber") match {
-              case Some(JsString(s)) => PhoneNumber(s)
-              case None => deserializationError("ToNumber was not present in the call object")
-            }
-
-            val state = callFields.get("State") match {
-              case Some(JsString(s)) => ActionState.withName(s)
-              case None => deserializationError("State was not present in the call object")
-            }
-
-            val contactId = callFields.get("ContactId") match {
-              case Some(JsNumber(n)) => n.toLong
-              case None => deserializationError("ContactId was not present in the call object")
-            }
-
-            val inbound = callFields.get("Inbound") match {
-              case Some(JsBoolean(b)) => b
-              case None => deserializationError("Inbound was not present in the call object")
-            }
-
-            val createdOn = callFields.get("Created") match {
-              case Some(JsString(s)) => CallFireIsoDateTimeFormatter.parseDateTime(s)
-              case None => deserializationError("Created was not present in the call object")
-            }
-
-            val modifiedOn = callFields.get("Modified") match {
-              case Some(JsString(s)) => CallFireIsoDateTimeFormatter.parseDateTime(s)
-              case None => deserializationError("Modified was not present in the call object")
-            }
-
-            val finalResult = callFields.get("FinalResult") match {
-              case Some(JsString(s)) => Result.withName(s)
-              case None => deserializationError("FinalResult was not present in the call object")
-            }
-
-            val callRecords = callFields.get("CallRecord") match {
-              case Some(s) => s.convertTo[Set[CallRecord]]
-              case None => deserializationError("CallRecord was not present in the call object")
-            }
-
-            Call(id, from, to, state, contactId, inbound, createdOn, modifiedOn, Some(finalResult), callRecords)
-          }
-          case None => deserializationError("Call was not present in call object")
+    def stripResource(json: JsObject, wrappedObjectKey: String): JsObject = {
+      json.fields.get("Resource") match {
+        case Some(JsObject(resourceFields)) => resourceFields.get(wrappedObjectKey) match {
+          case Some(JsObject(fields)) => JsObject(Map(wrappedObjectKey -> JsObject(fields)))
+          case None => deserializationError(s"$wrappedObjectKey was not present in the resource json")
         }
-        case None => deserializationError("Resource was not present in call object")
+        case None => json.fields.get(wrappedObjectKey) match {
+          case Some(JsObject(fields)) => JsObject(Map(wrappedObjectKey -> JsObject(fields)))
+          case None => deserializationError(s"$wrappedObjectKey was not present in the json")
+        }
+      }
+    }
+
+    def read(json: JsValue): Call = stripResource(json.asJsObject("Exepcting Call to be json object"), "Call") match {
+      case JsObject(resourceFields) => resourceFields.get("Call") match {
+        case Some(JsObject(callFields)) => {
+          logger.debug("******************** " + json)
+          // CallFire needs to fix this ... their webhooks post and @id that is a string, but
+          // the regular Call format has @id as a long
+          // The same thing applies to numbers like to and from
+          val id = callFields.get("@id") match {
+            case Some(JsNumber(n)) => n.toLong
+            case Some(JsString(s)) => s.toLong
+            case None => deserializationError("@id was not present in the call object")
+          }
+
+          val from = callFields.get("FromNumber") match {
+            case Some(JsString(s)) => PhoneNumber(s)
+            case Some(JsNumber(n)) => PhoneNumber(n.toString)
+            case None => deserializationError("FromNumber was not present in the call object")
+          }
+
+          val to = callFields.get("ToNumber") match {
+            case Some(JsString(s)) => PhoneNumber(s)
+            case Some(JsNumber(n)) => PhoneNumber(n.toString)
+            case None => deserializationError("ToNumber was not present in the call object")
+          }
+
+          val state = callFields.get("State") match {
+            case Some(JsString(s)) => ActionState.withName(s)
+            case None => deserializationError("State was not present in the call object")
+          }
+
+          val contactId = callFields.get("ContactId") match {
+            case Some(JsNumber(n)) => n.toLong
+            case None => deserializationError("ContactId was not present in the call object")
+          }
+
+          val inbound = callFields.get("Inbound") match {
+            case Some(JsBoolean(b)) => b
+            case None => deserializationError("Inbound was not present in the call object")
+          }
+
+          val createdOn = callFields.get("Created") match {
+            case Some(JsString(s)) => CallFireIsoDateTimeFormatter.parseDateTime(s)
+            case None => deserializationError("Created was not present in the call object")
+          }
+
+          val modifiedOn = callFields.get("Modified") match {
+            case Some(JsString(s)) => CallFireIsoDateTimeFormatter.parseDateTime(s)
+            case None => deserializationError("Modified was not present in the call object")
+          }
+
+          val finalResult = callFields.get("FinalResult") match {
+            case Some(JsString(s)) => Result.withName(s)
+            case None => deserializationError("FinalResult was not present in the call object")
+          }
+
+          // Another CallFire bug
+          val callRecords = callFields.get("CallRecord") match {
+            case Some(s) => s match {
+              case recordArray : JsArray => recordArray.convertTo[Set[CallRecord]]
+              case recordObject : JsObject => Set(recordObject.convertTo[CallRecord])
+            }
+            case None => deserializationError("CallRecord was not present in the call object")
+          }
+
+          Call(id, from, to, state, contactId, inbound, createdOn, modifiedOn, Some(finalResult), callRecords)
+        }
+        case None => deserializationError("Call was not present in call object")
       }
       case default => deserializationError(s"Expecting call to be json object, but got ${default.getClass.getName}")
     }
   }
 
-//  implicit val SearchNumbersResultFormat = new RootJsonFormat[SearchNumbersResult] {
-//    def write(obj: SearchNumbersResult): JsValue = ???
-//
-//    def read(json: JsValue): SearchNumbersResult = json match {
-//      case listObject: JsonObject
-//    }
-//  }
+  implicit val CallFinishedEventFormat = new RootJsonFormat[CallFinishedEvent] {
+    def write(obj: CallFinishedEvent): JsValue = ???
+
+    def read(json: JsValue): CallFinishedEvent = json match {
+      case JsObject(fields) => fields.get("CallFinished") match {
+        case Some(JsObject(eventFields)) => {
+          val subscriptionId = eventFields.get("SubscriptionId") match {
+            case Some(JsNumber(value)) => value.toLong
+            case default => deserializationError(s"Expecting SubscriptionId to be json long value, but got ${default.getClass.getName}")
+          }
+          val call = eventFields.get("Call") match {
+            case Some(value) => JsObject("Call" -> value).convertTo[Call]
+            case None => deserializationError("Call was not present in the json object")
+          }
+          CallFinishedEvent(subscriptionId, call)
+        }
+        case None => deserializationError("CallFinished was not present in the json object")
+      }
+      case default => deserializationError(s"Expecting CallFinishedEvent to be json object, but got ${default.getClass.getName}")
+    }
+  }
 }

@@ -195,4 +195,26 @@ package object tags {
         "expr" -> expression.value),
       body = body
     )
+
+  class CatchType(val value: String) {
+    require(CatchType.ValidValues.contains(value))
+  }
+  object CatchType {
+    val ValidValues = Set("hangup", "digit")
+  }
+
+  case object HangupCatchType extends CatchType("hangup")
+  case object DigitCatchType extends CatchType("digit")
+
+  case class Catch(override val name: Option[String] = None, `type`: CatchType, value: Option[String] = None, goto: String, override val body: Seq[CallFireXmlTag])
+    extends CallFireXmlTag(
+      name = name,
+      label = "catch",
+      tagAttributes = Map(
+        "type" -> `type`.value,
+        "value" -> value,
+        "goto" -> goto
+      ),
+      body = body
+    )
 }

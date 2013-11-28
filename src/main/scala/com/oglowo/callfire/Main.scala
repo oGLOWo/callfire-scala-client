@@ -201,52 +201,93 @@ object Main extends Logging {
 //
 //    runTryPurchaseAndConfigureNumber(client, prefix.toInt, city, count.toInt)
     val dialplan =
-  <dialplan name="Root">
+  <dialplan loggingEnabled="true">
     <menu>
-      <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-organization-main-greeting-16bit8khzmono.wav</play>
-      <keypress pressed="1">
-        <setvar varname="grande_burrito">salmon-butter-butt-393938883838</setvar>
-        <transfer musiconhold="default" mode="waterfall" callerid="${call.callerid}" continue-after="false" screen="true" timeout="5" whisper-tts="Call for the Sales Department. Press 1 to accept">12134485916</transfer>
+      <play cache="false" type="url">
+        https://us-east.manta.joyent.com/vonjourvoix/public/default-organization-main-greeting-16bit8khzmono.wav
+      </play>
+      <keypress pressed="701">
+        <setvar varname="voicemail_recipient_type">users</setvar>
+        <setvar varname="recipient_id">46a8e450-57a9-11e3-94c8-90b8d02a6319</setvar>
+        <setvar varname="voicemail_greeting">
+          https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav
+        </setvar>
+        <play cache="false" type="url">
+          https://us-east.manta.joyent.com/vonjourvoix/public/default-call-forwarding-greeting-16bit8khzmono.wav
+        </play>
+        <transfer musiconhold="default" timeout="20" mode="waterfall" screen="false" callerid="${{call.dnis}}"
+                  whisper-tts="Incoming vonjour call." continue-after="false">12134485916
+        </transfer>
       </keypress>
-      <keypress pressed="2">
-        <menu>
-          <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav</play>
-          <record varname="voicemail_recording_support" name="recording_support"/>
-          <play type="url" cache="false" name="voicemail_options_support">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-options-16bit8khzmono.wav</play>
-          <keypress pressed="1">
-            <play type="url" cache="false">${{voicemail_recording_support}}</play>
-            <goto>voicemail_options_support</goto>
-          </keypress>
-          <keypress pressed="2">
-            <play type="tts">This shit will now send</play>
-            <post name="voicemail_poster_support" varname="turtles_support">http://19257835.ngrok.com/groups/1d4138c0-483f-11e3-b2aa-28cfe90524e9/inbox/messages?voicemailRecordingUri=${{voicemail_recording_support}}</post>
-            <play type="tts">Big booty hoes! Here is the response from the server for support vm send ${{turtles_support}}</play>
-          </keypress>
-          <keypress pressed="3">
-            <goto>recording_support</goto>
-          </keypress>
-        </menu>
+      <keypress pressed="0">
+        <setvar varname="voicemail_recipient_type">groups</setvar>
+        <setvar varname="recipient_id">4723e0b0-57a9-11e3-994f-90b8d0128a60</setvar>
+        <setvar varname="voicemail_greeting">
+          https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav
+        </setvar>
+        <transfer musiconhold="default" timeout="20" mode="waterfall" screen="false" callerid="${{call.callerid}}"
+                  whisper-tts="Incoming vonjour Operator call. Press 1 to accept." continue-after="false">
+          19514030229, 12134485916
+        </transfer>
+      </keypress>
+      <keypress pressed="9999">
+        <setvar varname="voicemail_recipient_type">users</setvar>
+        <setvar varname="recipient_id">44e05950-57a9-11e3-994f-90b8d0128a60</setvar>
+        <setvar varname="voicemail_greeting">
+          https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav
+        </setvar>
+      </keypress>
+      <keypress pressed="700">
+        <setvar varname="voicemail_recipient_type">users</setvar>
+        <setvar varname="recipient_id">46a254a0-57a9-11e3-994f-90b8d0128a60</setvar>
+        <setvar varname="voicemail_greeting">
+          https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav
+        </setvar>
+        <play cache="false" type="url">
+          https://us-east.manta.joyent.com/vonjourvoix/public/default-call-forwarding-greeting-16bit8khzmono.wav
+        </play>
+        <transfer musiconhold="default" timeout="20" mode="waterfall" screen="false" callerid="${{call.dnis}}"
+                  whisper-tts="Incoming vonjour call." continue-after="false">19514030229
+        </transfer>
+      </keypress>
+      <keypress pressed="1">
+        <setvar varname="voicemail_recipient_type">groups</setvar>
+        <setvar varname="recipient_id">472abe80-57a9-11e3-94c8-90b8d02a6319</setvar>
+        <setvar varname="voicemail_greeting">
+          https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav
+        </setvar>
+        <transfer musiconhold="default" timeout="20" mode="waterfall" screen="false" callerid="${{call.callerid}}"
+                  whisper-tts="Incoming vonjour support call. Press 1 to accept." continue-after="false">
+          19514030229, 12134485916
+        </transfer>
       </keypress>
     </menu>
-
+    <catch type="hangup" goto="salmon_butt">
     <menu>
-      <play type="url" cache="false">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-greeting-16bit8khzmono.wav</play>
-      <record varname="voicemail_recording_703" name="recording_703"/>
-      <play type="url" cache="false" name="voicemail_options_703">https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-options-16bit8khzmono.wav</play>
+      <play cache="false" type="url">${{voicemail_greeting}}</play>
+      <record background="false" varname="voicemail_recording" name="recording"></record>
+      <play cache="false" type="url" name="voicemail_options">
+        https://us-east.manta.joyent.com/vonjourvoix/public/default-voicemail-options-16bit8khzmono.wav
+      </play>
       <keypress pressed="1">
-        <play type="url" cache="false">${{voicemail_recording_703}}</play>
-        <goto>voicemail_options_703</goto>
+        <play cache="false" type="url">${{voicemail_recording}}</play>
+        <goto>voicemail_options</goto>
       </keypress>
       <keypress pressed="2">
-        <play type="tts">This shit for user will now send with var is ${{grande_burrito}}</play>
-        <post name="voicemail_poster_703" varname="turtles_703">http://api.vonjour.com/users/${{grande_burrito}}/inbox/messages?voicemailRecordingUri=${{voicemail_recording_703}}</post>
-        <play type="tts">Big booty user hoes! Here is the response from the server for support vm send ${{turtles_703}}</play>
+        <play cache="false" type="tts">Sending your voicemail</play>
+        <post varname="voicemail_post_response_internal">
+          https://api.vonjour.com/${{voicemail_recipient_type}}/${{recipient_id}}/inbox/messages?voicemailRecordingUri=${{voicemail_recording}}
+        </post>
+        <play cache="false" type="tts">Your voicemail has been sent</play>
       </keypress>
       <keypress pressed="3">
-        <goto>recording_703</goto>
+        <goto>recording</goto>
       </keypress>
     </menu>
-
+    </catch>
+    <post varname="voicemail_post_response" name="salmon_butt">
+      https://api.vonjour.com/${{voicemail_recipient_type}}/${{recipient_id}}/inbox/messages?voicemailRecordingUri=${{voicemail_recording}}
+    </post>
   </dialplan>
 
 
