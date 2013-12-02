@@ -173,6 +173,16 @@ trait Client {
     post("number/order.json", parameters.some).as[OrderReference]
   }
 
+  def orderNumbers(localCount: Int, prefix: Option[String] = None): Future[OrderReference] = {
+    val parameters = Map(
+      "localCount" -> localCount.toString
+    ) ++ { prefix match {
+      case Some(s) => Map("Prefix" -> s)
+      case None => Map.empty
+    }}
+    post("number/order.json", parameters.some).as[OrderReference]
+  }
+
   def bulkOrderNumbers(prefix: Option[Min4DigitInt] = None, city: Option[String] = None, count: Int = 1): Future[OrderReference] = {
     val parameters: Map[String, String] = Map("localCount" -> count.toString) |>
       { map => if (prefix.isDefined) map + ("Prefix" -> prefix.get.underlying.toString) else map } |>

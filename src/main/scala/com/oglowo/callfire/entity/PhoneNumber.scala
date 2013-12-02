@@ -9,11 +9,28 @@ import com.oglowo.phonenumber.{PhoneNumber => GlowPhoneNumber, PhoneNumberFormat
 
 case class PhoneNumber(number: Long,
                        nationalFormat: String,
-                       tollFree: Boolean,
                        region: Option[Region] = None,
                        status: Option[PhoneNumberStatus] = None,
                        lease: Option[Lease] = None,
-                       configuration: Option[PhoneNumberConfiguration] = None) extends ApiEntity
+                       configuration: Option[PhoneNumberConfiguration] = None) extends ApiEntity {
+  def fourDigitPrefix: String = {
+    val e164NumberPrefix = GlowPhoneNumber(number.toString) match {
+      case Success(s) => s.format(PhoneNumberFormat.E164).substring(1, 5)
+      case Failure(error) => throw new IllegalArgumentException(error)
+    }
+    e164NumberPrefix
+  }
+
+  def tollFree: Boolean = {
+    val e164NumberPrefix = GlowPhoneNumber(number.toString) match {
+      case Success(s) => s.format(PhoneNumberFormat.E164).substring(2, 5)
+      case Failure(error) => throw new IllegalArgumentException(error)
+    }
+    PhoneNumber.TollFreePrefixes.exists(prefix => {
+      prefix.prefix == e164NumberPrefix
+    })
+  }
+}
 
 object PhoneNumber {
   val TollFreePrefixes = Set(
@@ -38,13 +55,13 @@ object PhoneNumber {
 
   def apply(number: Long): PhoneNumber = {
     GlowPhoneNumber(number.toString) match {
-      case Success(s) => PhoneNumber(number, s.format(PhoneNumberFormat.National), false, None, None, None, None)
+      case Success(s) => PhoneNumber(number, s.format(PhoneNumberFormat.National), None, None, None, None)
       case Failure(error) => throw new IllegalArgumentException(s"Number $number could not be parsed as a valid number", error)
     }
   }
   def apply(number: MaxString15): PhoneNumber = {
     GlowPhoneNumber(number) match {
-      case Success(s) => PhoneNumber(implicitly[String](number).toLong, s.format(PhoneNumberFormat.National), false, None, None, None, None)
+      case Success(s) => PhoneNumber(implicitly[String](number).toLong, s.format(PhoneNumberFormat.National), None, None, None, None)
       case Failure(error) => throw new IllegalArgumentException(s"Number $number could not be parsed as a valid number", error)
     }
   }

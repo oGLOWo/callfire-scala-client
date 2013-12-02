@@ -347,7 +347,7 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
             case Some(numberConfigurationJson) => Option(numberConfigurationJson.convertTo[PhoneNumberConfiguration])
             case _ => None
           }
-          PhoneNumber(number.toLong, nationalFormat, tollFree, region, status, lease, numberConfiguration)
+          PhoneNumber(number.toLong, nationalFormat, region, status, lease, numberConfiguration)
         }
         case _ => deserializationError("Failure deserializing PhoneNumber because required fields Number, NationalFormat, and TollFree were not all present")
       }
@@ -389,7 +389,7 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
                   case Some(numberConfigurationJson) => Option(numberConfigurationJson.convertTo[PhoneNumberConfiguration])
                   case _ => None
                 }
-                PhoneNumber(number.toLong, nationalFormat, tollFree, region, status, lease, numberConfiguration)
+                PhoneNumber(number.toLong, nationalFormat, region, status, lease, numberConfiguration)
               }
               case _ => deserializationError("Failure deserializing PhoneNumber because required fields Number, NationalFormat, and TollFree were not all present")
             }
@@ -414,7 +414,7 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
                 case Some(numberConfigurationJson) => Option(numberConfigurationJson.convertTo[PhoneNumberConfiguration])
                 case _ => None
               }
-              Seq(PhoneNumber(number.toLong, nationalFormat, tollFree, region, status, lease, numberConfiguration))
+              Seq(PhoneNumber(number.toLong, nationalFormat, region, status, lease, numberConfiguration))
             }
             case _ => deserializationError("Failure deserializing PhoneNumber because required fields Number, NationalFormat, and TollFree were not all present")
           }
@@ -693,7 +693,7 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
             case metaArray : JsArray => metaArray.convertTo[Set[RecordingMeta]]
             case metaObject : JsObject => Set(metaObject.convertTo[RecordingMeta])
           }
-          case None => deserializationError("RecordingMeta was not present in the CallRecord object")
+          case None => Set.empty[RecordingMeta]
         }
 
         CallRecord(id, result, finishedOn, billedAmount, answeredOn, durationInSeconds, recordingsMetaData)
