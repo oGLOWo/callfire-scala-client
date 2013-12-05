@@ -141,7 +141,7 @@ package object tags {
 
   case class Expression(value: String) extends CallFireTextTag[String](value)
 
-  case class Transfer(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, numbers: Set[PhoneNumber] = Set.empty, screen: Boolean = false)
+  case class Transfer(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, numbers: Seq[PhoneNumber] = Seq.empty, screen: Boolean = false)
     extends CallFireXmlTag(name = name,
       label = "transfer",
       tagAttributes = Map(
