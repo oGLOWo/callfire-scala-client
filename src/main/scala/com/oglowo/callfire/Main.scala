@@ -250,6 +250,7 @@ object Main extends Logging {
     </menu>
     <catch goto="voicemail_poster" type="hangup">
       <menu>
+        <setvar varname="voicemail_post_sent">waffles</setvar>
         <play cache="false" type="url">${{voicemail_greeting}}</play>
         <record background="false" varname="voicemail_recording" name="recording"></record>
         <play cache="false" type="url" name="voicemail_options">
@@ -264,6 +265,7 @@ object Main extends Logging {
           <post varname="voicemail_post_response_internal">
             https://api.vonjour.com/${{voicemail_recipient_type}}/${{recipient_id}}/inbox/messages?voicemailRecordingUri=${{voicemail_recording}}
           </post>
+          <setvar varname="voicemail_post_sent">turtles</setvar>
           <play cache="false" type="tts">Your voicemail has been sent</play>
         </keypress>
         <keypress pressed="3">
@@ -271,9 +273,11 @@ object Main extends Logging {
         </keypress>
       </menu>
     </catch>
-    <post varname="voicemail_post_response" name="voicemail_poster">
-      https://api.vonjour.com/${{voicemail_recipient_type}}/${{recipient_id}}/inbox/messages?voicemailRecordingUri=${{voicemail_recording}}
-    </post>
+    <equal var="${voicemail_post_sent}" expr="waffles" name="voicemail_poster">
+      <post varname="voicemail_post_response">
+        https://api.vonjour.com/${{voicemail_recipient_type}}/${{recipient_id}}/inbox/messages?voicemailRecordingUri=${{voicemail_recording}}
+      </post>
+    </equal>
   </dialplan>
 
 

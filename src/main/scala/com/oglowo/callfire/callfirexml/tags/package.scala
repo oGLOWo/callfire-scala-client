@@ -92,7 +92,7 @@ package object tags {
   case class KeyPress(override val name: Option[String] = None, pressed: KeyPressKey, override val body: Seq[CallFireXmlTag])
     extends CallFireXmlTag(name = name,
       label = "keypress",
-      tagAttributes = Map("pressed" -> pressed.value),
+      tagAttributes = Map("pressed" -> pressed.value, "name" -> name),
       body = body)
 
   case class SetVar(override val name: Option[String] = None, variableName: String, variableValue: Expression)
@@ -172,7 +172,7 @@ package object tags {
     extends CallFireXmlTag(
       name = name,
       label = "if",
-      tagAttributes = Map("expr" -> expression.value),
+      tagAttributes = Map("expr" -> expression.value, "name" -> name),
       body = body
     )
 
@@ -182,7 +182,8 @@ package object tags {
       label = "equal",
       tagAttributes = Map(
         "var" -> variable.value,
-        "expr" -> expression.value),
+        "expr" -> expression.value,
+        "name" -> name),
       body = body
     )
 
@@ -192,7 +193,8 @@ package object tags {
       label = "notEqual",
       tagAttributes = Map(
         "var" -> variable.value,
-        "expr" -> expression.value),
+        "expr" -> expression.value,
+        "name" -> name),
       body = body
     )
 
@@ -213,7 +215,8 @@ package object tags {
       tagAttributes = Map(
         "type" -> `type`.value,
         "value" -> value,
-        "goto" -> goto
+        "goto" -> goto,
+        "name" -> name
       ),
       body = body
     )
