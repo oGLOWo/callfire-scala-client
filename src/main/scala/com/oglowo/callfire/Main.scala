@@ -303,7 +303,8 @@ object Main extends Logging {
     val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
 
     val modifiedPhoneNumber = phoneNumber.copy(configuration = configuration.some)
-    client.configureNumber(modifiedPhoneNumber) onComplete {
+    //client.configureNumber(modifiedPhoneNumber) onComplete {
+    client.recordSoundViaPhone(PhoneNumber("2134485916")) onComplete {
       case Success(number) => {
         println("The newly configured number is " + number)
         client.shutdown()
