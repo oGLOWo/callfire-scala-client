@@ -30,10 +30,10 @@ trait FakeClientConnection extends ClientConnection with FakeResponses {
 
   def createContentTypeHeader(contentType: ContentType) = `Content-Type`(contentType)
   def createDateHeader(dateTime: DateTime = DateTime.now) = Date(dateTime)
-  def createContentLengthHeader(entity: HttpEntity = EmptyEntity) =
+  def createContentLengthHeader(entity: HttpEntity = HttpEntity.Empty) =
     `Content-Length`(entity match {
-      case EmptyEntity => 0
-      case HttpBody(_, buffer) => buffer.length
+      case HttpEntity.Empty => 0
+      case HttpEntity.NonEmpty(_, data) => data.length
     })
   def createVaryHeader(value: String = "User-Agent,Accept-Encoding") = RawHeader("Vary", value)
 
