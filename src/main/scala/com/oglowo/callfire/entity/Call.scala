@@ -37,5 +37,15 @@ case class Call(id: Long,
       case true => None
     }
   }
+
+  def voicemailRecording: Option[RecordingMeta] = {
+    callRecords.headOption match {
+      case Some(callRecord) => callRecord.recordingsMetaData.headOption match {
+        case Some(recordingMeta) => Some(recordingMeta)
+        case None => None
+      }
+      case None => None
+    }
+  }
 }
 
