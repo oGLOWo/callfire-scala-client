@@ -281,7 +281,20 @@ object Main extends Logging {
   </dialplan>
 
 
-
+    val prefix = ("1" + args(0)).toInt
+    client.searchForNumbers(Some(implicitly[Min4DigitInt](prefix)), None, 10).onComplete {
+      case Success(numbers) => {
+        client.shutdown()
+        println("Here are the numbers")
+        numbers.foreach(number => println(number.nationalFormat))
+      }
+      case Failure(error) => {
+        client.shutdown()
+        println("ERRROR => " + error)
+      }
+    }
+  }
+}
 //    val callId = args(0).toLong                                                         `
 //    val callFuture = client.getCall(callId)
 //
@@ -298,22 +311,22 @@ object Main extends Logging {
 //        println("Error trying to get voicemailsound for call: " + error)
 //      }
 //    }
-    val phoneNumber = PhoneNumber(args(0))
-    val inboundConfiguration = InboundIvrConfiguration(dialplan.some, phoneNumber.number.some)
-    val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
-
-    val modifiedPhoneNumber = phoneNumber.copy(configuration = configuration.some)
-    //client.configureNumber(modifiedPhoneNumber) onComplete {
-    client.recordSoundViaPhone(PhoneNumber("2134485916")) onComplete {
-      case Success(number) => {
-        println("The newly configured number is " + number)
-        client.shutdown()
-      }
-      case Failure(error) => {
-        printError(error)
-        client.shutdown()
-      }
-    }
+//    val phoneNumber = PhoneNumber(args(0))
+//    val inboundConfiguration = InboundIvrConfiguration(dialplan.some, phoneNumber.number.some)
+//    val configuration = PhoneNumberConfiguration(EnabledPhoneNumberFeature.some, DisabledPhoneNumberFeature.some, inboundConfiguration.some)
+//
+//    val modifiedPhoneNumber = phoneNumber.copy(configuration = configuration.some)
+//    //client.configureNumber(modifiedPhoneNumber) onComplete {
+//    client.recordSoundViaPhone(PhoneNumber("2134485916")) onComplete {
+//      case Success(number) => {
+//        println("The newly configured number is " + number)
+//        client.shutdown()
+//      }
+//      case Failure(error) => {
+//        printError(error)
+//        client.shutdown()
+//      }
+//    }
 //    val callId = args(0).toLong
 //    client.getCall(callId) onComplete {
 //      case Success(s) => {
@@ -325,9 +338,6 @@ object Main extends Logging {
 //        client.shutdown()
 //      }
 //    }
-  }
-}
-
 
 //    client.getNumber(PhoneNumber(number)) onComplete {
 //      case Success(phoneNumber) => {
