@@ -19,31 +19,22 @@ case class Call(id: Long,
   def billedDuration(p: (CallRecord) => Boolean): Duration = (0.seconds.asInstanceOf[Duration] /: callRecords.filter(p))(_ + _.billedDuration)
 
   def voicemailSoundName: Option[String] = {
-    callRecords.isEmpty match {
-      case false => callRecords.head.recordingsMetaData.isEmpty match {
-        case false => Some(callRecords.head.recordingsMetaData.head.name)
-        case true => None
-      }
-      case true => None
+    callRecords.find(_.containsVoicemail) match {
+      case Some(callRecord) => Some(callRecord.recordingsMetaData.head.name)
+      case None => None
     }
   }
 
   def voicemailRecordingId: Option[Long] = {
-    callRecords.isEmpty match {
-      case false => callRecords.head.recordingsMetaData.isEmpty match {
-        case false => Some(callRecords.head.recordingsMetaData.head.id)
-        case true => None
-      }
-      case true => None
+    callRecords.find(_.containsVoicemail) match {
+      case Some(callRecord) => Some(callRecord.recordingsMetaData.head.id)
+      case None => None
     }
   }
 
   def voicemailRecording: Option[RecordingMeta] = {
-    callRecords.headOption match {
-      case Some(callRecord) => callRecord.recordingsMetaData.headOption match {
-        case Some(recordingMeta) => Some(recordingMeta)
-        case None => None
-      }
+    callRecords.find(_.containsVoicemail) match {
+      case Some(callRecord) => Some(callRecord.recordingsMetaData.head)
       case None => None
     }
   }
