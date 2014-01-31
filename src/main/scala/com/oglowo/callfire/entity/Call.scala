@@ -26,6 +26,7 @@ case class Call(id: Long,
   }
 
   def voicemailRecordingId: Option[Long] = {
+
     callRecords.find(_.containsVoicemail) match {
       case Some(callRecord) => Some(callRecord.recordingsMetaData.head.id)
       case None => None

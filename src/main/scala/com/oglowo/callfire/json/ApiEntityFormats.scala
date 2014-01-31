@@ -740,12 +740,20 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
           val from = callFields.get("FromNumber") match {
             case Some(JsString(s)) => PhoneNumber(s)
             case Some(JsNumber(n)) => PhoneNumber(n.toString)
+            case Some(JsObject(fields)) => fields.get("value") match {
+              case Some(JsString(s)) => PhoneNumber(s)
+              case None => deserializationError("ToNumber had object format, but did not contain the value field")
+            }
             case None => deserializationError("FromNumber was not present in the call object")
           }
 
           val to = callFields.get("ToNumber") match {
             case Some(JsString(s)) => PhoneNumber(s)
             case Some(JsNumber(n)) => PhoneNumber(n.toString)
+            case Some(JsObject(fields)) => fields.get("value") match {
+              case Some(JsString(s)) => PhoneNumber(s)
+              case None => deserializationError("ToNumber had object format, but did not contain the value field")
+            }
             case None => deserializationError("ToNumber was not present in the call object")
           }
 
