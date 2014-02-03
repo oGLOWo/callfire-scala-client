@@ -541,14 +541,13 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
                             }
                             val maybeTollFreeNumbers: Option[OrderItem[PhoneNumber]] = orderJson.fields.get("TollFreeNumbers") match {
                               case Some(tollfreeNumbersValue) => tollfreeNumbersValue match {
-                                case tollfreeNumbersJson: JsObject => {
+                                case tollfreeNumbersJson: JsObject =>
                                   tollfreeNumbersJson.getFields("Ordered", "UnitCost") match {
                                     case Seq(JsNumber(quantity), JsNumber(itemCost)) => {
                                       val fulfilled: Seq[PhoneNumber] = tollfreeNumbersJson.fields.get("Fulfilled") match {
                                         case Some(itemsJson) => itemsJson match {
-                                          case JsString(itemsFulfilled) => {
+                                          case JsString(itemsFulfilled) =>
                                             itemsFulfilled.split(" ").map(item => PhoneNumber(item)).toSeq
-                                          }
                                           case _ => deserializationError(s"Expecting 'Fulfilled' to be json string, but got ${itemsJson.getClass}")
                                         }
                                         case None => List.empty
@@ -557,14 +556,13 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
                                     }
                                     case _ => deserializationError("Ordered and UnitCost are required, but were not present in the 'TollFreeNumbers' json")
                                   }
-                                }
                                 case _ => deserializationError(s"Expecting 'TollFreeNumbers' to be a json object, but got ${tollfreeNumbersValue.getClass}")
                               }
                               case None => None
                             }
                             val maybeKeywords: Option[OrderItem[Keyword]] = orderJson.fields.get("Keywords") match {
                               case Some(keywordsValue) => keywordsValue match {
-                                case keywordsJson: JsObject => {
+                                case keywordsJson: JsObject =>
                                   keywordsJson.getFields("Ordered", "UnitCost") match {
                                     case Seq(JsNumber(quantity), JsNumber(itemCost)) => {
                                       val fulfilled: Seq[Keyword] = keywordsJson.fields.get("Fulfilled") match {
@@ -580,7 +578,6 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
                                     }
                                     case _ => deserializationError("Ordered and UnitCost are required, but were not present in the 'Keywords' json")
                                   }
-                                }
                                 case _ => deserializationError(s"Expecting 'Keywords' to be a json object, but got ${keywordsValue.getClass}")
                               }
                               case None => None
@@ -809,7 +806,7 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
 
     def read(json: JsValue): CallFinishedEvent = json match {
       case JsObject(fields) => fields.get("CallFinished") match {
-        case Some(JsObject(eventFields)) => {
+        case Some(JsObject(eventFields)) =>
           val subscriptionId = eventFields.get("SubscriptionId") match {
             case Some(JsNumber(value)) => value.toLong
             case default => deserializationError(s"Expecting SubscriptionId to be json long value, but got ${default.getClass.getName}")
@@ -819,7 +816,6 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
             case None => deserializationError("Call was not present in the json object")
           }
           CallFinishedEvent(subscriptionId, call)
-        }
         case None => deserializationError("CallFinished was not present in the json object")
       }
       case default => deserializationError(s"Expecting CallFinishedEvent to be json object, but got ${default.getClass.getName}")
