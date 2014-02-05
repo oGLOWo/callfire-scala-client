@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema elementFormDefault="qualified"
+	targetNamespace="http://api.callfire.com/notification/xsd"
+	xmlns="http://www.w3.org/2001/XMLSchema"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:tns="http://api.callfire.com/notification/xsd"
+	xmlns:data="http://api.callfire.com/data"
+	xmlns:jaxb="http://java.sun.com/xml/ns/jaxb"
+	xmlns:xmime="http://www.w3.org/2005/05/xmlmime"
+	xmlns:annox="http://annox.dev.java.net"
+	jaxb:version="2.0">
+
+	<!-- JAXB Customization -->
+
+	<annotation>
+		<appinfo>
+			<jaxb:bindings node="/xs:schema/xs:complexType[@name='TextNotification']">
+				<annox:annotate>
+					<annox:annotate annox:class="javax.xml.bind.annotation.XmlRootElement" name="TextNotification"/>
+				</annox:annotate>
+			</jaxb:bindings>
+			<jaxb:bindings node="/xs:schema/xs:complexType[@name='BroadcastNotification']">
+				<annox:annotate>
+					<annox:annotate annox:class="javax.xml.bind.annotation.XmlRootElement" name="BroadcastNotification"/>
+				</annox:annotate>
+			</jaxb:bindings>
+		</appinfo>
+	</annotation>
+
+	<import namespace="http://api.callfire.com/data" schemaLocation="callfire-data.xsd" />
+	
+	<complexType name="Notification" abstract="true">
+		<sequence>
+			<element name="SubscriptionId" type="long" minOccurs="0"/>
+		</sequence>
+	</complexType>
+	
+	<!-- Text Notification -->
+	
+	<complexType name="TextNotification">
+		<complexContent>
+			<extension base="tns:Notification">
+				<sequence>
+					<element ref="data:Text"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	
+	<element name="TextReceived" type="tns:TextNotification"/>
+	<element name="TextSent" type="tns:TextNotification"/>
+	
+	<!-- Call Notification -->
+	
+	<element name="CallFinished">
+		<complexType>
+			<complexContent>
+				<extension base="tns:Notification">
+					<sequence>
+						<element ref="data:Call"/>
+					</sequence>
+				</extension>
+			</complexContent>
+		</complexType>
+	</element>
+
+	<!-- Broadcast Notification -->
+	
+	<complexType name="BroadcastNotification">
+		<complexContent>
+			<extension base="tns:Notification">
+				<sequence>
+					<element ref="data:Broadcast"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<element name="BroadcastFinished" type="tns:BroadcastNotification" />
+	<element name="BroadcastStarted" type="tns:BroadcastNotification" />
+	<element name="BroadcastStopped" type="tns:BroadcastNotification" />
+
+</schema>
