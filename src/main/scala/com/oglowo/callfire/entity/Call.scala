@@ -11,8 +11,7 @@ case class Call(id: Long,
                 inbound: Boolean,
                 createdOn: DateTime,
                 modifiedOn: DateTime,
-                finalResult:
-                Option[Result] = None,
+                finalResult: Option[Result] = None,
                 callRecords: Set[CallRecord] = Set.empty) extends ApiEntity {
   def billedDuration: Duration = (0.seconds.asInstanceOf[Duration] /: callRecords)(_ + _.billedDuration)
 

@@ -162,6 +162,27 @@ package object tags {
     if (screen == true) require(whisperTextToSpeech.isDefined && !whisperTextToSpeech.get.trim.isEmpty, "If you want to screen calls, you must set the whisper tts. For example, Call from 2 1 3 4 4 8 5 9 1 6. Press 1 to accept.")
   }
 
+  case class TransferTo(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, screen: Boolean = false, numbers: Expression)
+    extends CallFireXmlTag(name = name,
+      label = "transfer",
+      tagAttributes = Map(
+        "name" -> name,
+        "callerid" -> { callerId match {
+          case Left(number) => number.number.toString
+          case Right(expression) => expression.value
+        }},
+        "calleridalpha" -> callerIdAlpha,
+        "musiconhold" -> musicOnHold.value,
+        "continue-after" -> continueAfter,
+        "mode" -> ringMode.value,
+        "timeout" -> timeoutSeconds,
+        "whisper-tts" -> whisperTextToSpeech,
+        "screen" -> screen
+      ),
+      body = Seq(numbers)) {
+    if (screen == true) require(whisperTextToSpeech.isDefined && !whisperTextToSpeech.get.trim.isEmpty, "If you want to screen calls, you must set the whisper tts. For example, Call from 2 1 3 4 4 8 5 9 1 6. Press 1 to accept.")
+  }
+
   case class Goto(override val name: Option[String] = None, nodeName: String)
     extends CallFireXmlTag(name = name,
       label = "goto",

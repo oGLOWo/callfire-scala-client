@@ -779,21 +779,21 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
             case None => deserializationError("Modified was not present in the call object")
           }
 
-          val finalResult = callFields.get("FinalResult") match {
-            case Some(JsString(s)) => Result.withName(s)
-            case None => deserializationError("FinalResult was not present in the call object")
+          val maybeFinalResult = callFields.get("FinalResult") match {
+            case Some(JsString(s)) => Some(Result.withName(s))
+            case None => None
           }
 
           // Another CallFire bug
-          val callRecords = callFields.get("CallRecord") match {
+          val callRecords: Set[CallRecord] = callFields.get("CallRecord") match {
             case Some(s) => s match {
               case recordArray : JsArray => recordArray.convertTo[Set[CallRecord]]
               case recordObject : JsObject => Set(recordObject.convertTo[CallRecord])
             }
-            case None => deserializationError("CallRecord was not present in the call object")
+            case None => Set.empty
           }
 
-          Call(id, from, to, state, contactId, inbound, createdOn, modifiedOn, Some(finalResult), callRecords)
+          Call(id, from, to, state, contactId, inbound, createdOn, modifiedOn, maybeFinalResult, callRecords)
         }
         case None => deserializationError("Call was not present in call object")
       }
