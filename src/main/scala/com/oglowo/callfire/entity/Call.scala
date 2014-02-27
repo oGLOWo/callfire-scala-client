@@ -4,7 +4,7 @@ import org.joda.time.DateTime
 import scala.concurrent.duration._
 
 case class Call(id: Long,
-                from: PhoneNumber,
+                from: Option[PhoneNumber],
                 to: PhoneNumber,
                 state: ActionState,
                 contactId: Long,
@@ -17,10 +17,21 @@ case class Call(id: Long,
 
   def billedDuration(p: (CallRecord) => Boolean): Duration = (0.seconds.asInstanceOf[Duration] /: callRecords.filter(p))(_ + _.billedDuration)
 
+  def duration: Duration = (0.seconds.asInstanceOf[Duration] /: callRecords)(_ + _.duration)
+
+  def duration(p: (CallRecord) => Boolean): Duration = (0.seconds.asInstanceOf[Duration] /: callRecords.filter(p))(_ + _.duration)
+
   def voicemailSoundName: Option[String] = {
     callRecords.find(_.containsVoicemail) match {
       case Some(callRecord) => Some(callRecord.recordingsMetaData.head.name)
       case None => None
+    }
+  }
+
+  def containsVoicemail: Boolean = {
+    callRecords.find(_.containsVoicemail) match {
+      case Some(s) => true
+      case None => false
     }
   }
 

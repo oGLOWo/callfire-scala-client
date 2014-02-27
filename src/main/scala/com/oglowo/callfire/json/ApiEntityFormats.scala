@@ -1,7 +1,8 @@
 package com.oglowo.callfire.json
 
 import spray.json._
-import com.oglowo.callfire.entity._
+import com.oglowo.callfire.entity.{SoundReference, SoundMetaData, SoundType, SoundStatus, PhoneNumberFeature, PhoneNumberConfiguration, Region, Lease, InboundCallConfigurationType, IvrConfigurationType, CallTrackingConfigurationType, CallTrackingConfiguration, InboundIvrConfiguration, PhoneNumberStatus, KeywordStatus, OrderReference, Order, OrderItem, OrderStatus, Keyword, RecordingMeta, ApiEntity, CallRecord, Call, Result, ActionState, CallFinishedEvent}
+import com.oglowo.callfire.entity.{Order => CallFireOrder}
 import com.oglowo.callfire.entity.ApiError
 import com.oglowo.callfire.entity.PhoneNumber
 import com.github.nscala_time.time.Imports._
@@ -15,6 +16,8 @@ import com.github.nscala_time.time.Imports._
 import com.typesafe.scalalogging.log4j.Logging
 import scala.concurrent.duration.{Duration => ScalaDuration}
 import java.util.concurrent.TimeUnit
+import scalaz._
+import Scalaz._
 
 object ApiEntityFormats extends DefaultJsonProtocol with Logging {
   val CallFireDateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-ddZ")
@@ -493,8 +496,8 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
     def read(json: JsValue): OrderItem[T] = ???
   }
 
-  implicit val OrderFormat = new RootJsonFormat[Order] {
-    def write(obj: Order): JsValue = JsObject(Map(
+  implicit val OrderFormat = new RootJsonFormat[CallFireOrder] {
+    def write(obj: CallFireOrder): JsValue = JsObject(Map(
       "id" -> obj.id.toJson,
       "status"-> obj.status.toJson,
       "totalCost" -> obj.totalCost.toJson,
@@ -504,7 +507,7 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
       "tollFreeNumbers" -> optionFormat[OrderItem[PhoneNumber]].write(obj.tollFreeNumbers)
     ))
 
-    def read(json: JsValue): Order = json match {
+    def read(json: JsValue): CallFireOrder = json match {
       case JsObject(fields) => {
         fields.get("Resource") match {
           case Some(resource) => {
@@ -735,10 +738,19 @@ object ApiEntityFormats extends DefaultJsonProtocol with Logging {
           }
 
           val from = callFields.get("FromNumber") match {
-            case Some(JsString(s)) => PhoneNumber(s)
-            case Some(JsNumber(n)) => PhoneNumber(n.toString)
+            case Some(JsString(s)) => Validation.fromTryCatch(PhoneNumber(s)) match {
+              case Success(s) => Some(s)
+              case Failure(error) => None
+            }
+            case Some(JsNumber(n)) => Validation.fromTryCatch(PhoneNumber(n.toString)) match {
+              case Success(s) => Some(s)
+              case Failure(error) => None
+            }
             case Some(JsObject(fields)) => fields.get("value") match {
-              case Some(JsString(s)) => PhoneNumber(s)
+              case Some(JsString(s)) => Validation.fromTryCatch(PhoneNumber(s)) match {
+                case Success(s) => Some(s)
+                case Failure(error) => None
+              }
               case None => deserializationError("ToNumber had object format, but did not contain the value field")
             }
             case None => deserializationError("FromNumber was not present in the call object")
