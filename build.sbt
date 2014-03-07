@@ -6,15 +6,15 @@ name := "callfire-scala-client"
 
 organization := "com.oglowo"
 
-scalaVersion := "2.10.1"
+scalaVersion := "2.10.3"
 
-version := "0.2"
+version := "0.3"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8", "-language:postfixOps", "-language:implicitConversions", "-Xlint")
 
 scalacOptions in Test ++= Seq("-Yrangepos")
 
-javaOptions := Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5006")
+//javaOptions := Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5006")
 
 resolvers ++= Seq("spray repo" at "http://repo.spray.io/")
 

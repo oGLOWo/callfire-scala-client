@@ -19,7 +19,7 @@ trait ProductionClientConnection extends ClientConnection {
   // You don't want to give the world access to your CallFire account because that might
   // run up your bill quite a bit. If you do push it out, go to the callfire dashboard
   // and remove these credentials from API Access and create a new set.
-  val credentials: Pair[String, String] = ("8eccf6f02069", "1dd1705ba4fb8bb2")
+  val credentials: Pair[String, String] = ("your-callfire-api-username", "your-callfire-api-password")
 
   val connection: ActorRef = {
     for {
