@@ -54,7 +54,7 @@ trait Client {
 
   lazy val pipeline: HttpRequest => Future[HttpResponse] = (
     addCredentials(BasicHttpCredentials(credentials._1, credentials._2))
-      ~> addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "1.0", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.2-M8", "http://spray.io")))
+      ~> addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "1.0", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.2.0", "http://spray.io")))
       ~> logRequest(log)
       ~> sendReceive(connection)(context, timeout)
       ~> decode(Deflate)
@@ -297,35 +297,6 @@ trait Client {
 
   def getCall(id: Long): Future[Call] = {
     get(s"call/$id.json").as[Call]
-  }
-
-  // This is a hack to active a newly purchased number since it needs to receive 2 phone calls
-  // in order for it to accept any configuration via PUT /number/{Number}
-  def activateNumber(number: PhoneNumber, fromNumber: PhoneNumber): Future[PhoneNumber] = {
-    Iterator.continually({val result = Await.result(getNumber(number), Duration.Inf);result}).takeWhile(theNumber => {
-      val callFeature = theNumber.configuration.get.callFeature.get
-      callFeature != DisabledPhoneNumberFeature && callFeature != EnabledPhoneNumberFeature
-    }).foreach(p => {
-      println("Sending activation calls now...")
-      val requestId = UUID.randomUUID.toString
-      post("call.json", Map(
-        "To" -> p.number.toString,
-        "Type" -> "VOICE",
-        "BroadcastName" -> s"activation-${number.number}-$requestId",
-        "RequestId" -> requestId,
-        "LiveSoundText" -> "Vonjour Activation Hack. Vonjour Activation Hack.",
-        "MachineSoundText" -> "Vonjour Machine Activation Hack. Vonjour Machine Activation Hack.",
-        "From" -> fromNumber.number.toString,
-        "MaxAttempts" -> "3",
-        "RetryResults" -> "LA,AM,BUSY,DNC,XFER,XFER_LEG,NO_ANS,UNDIALED,SENT,RECEIVED,DNT,TOO_BIG,INTERNAL_ERROR,CARRIER_ERROR,CARRIER_TEMP_ERROR"
-      ).some) onComplete {
-        case Success(response) => println(s"The response is: ${response.entity.asString(HttpCharsets.`UTF-8`).asJson}")
-        case Failure(error) => println("trying to send activation call", error)
-      }
-      Thread.sleep(5000)
-    })
-    println("I AM SENDING THE BLOODY NUMBER FUTURE NOW")
-    getNumber(number)
   }
 
   def shutdown(): Unit = {

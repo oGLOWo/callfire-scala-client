@@ -21,15 +21,6 @@ package object pimps extends Logging {
   }
 
   implicit class PimpedHttpResponseFuture(val underlying: Future[HttpResponse]) extends AnyVal {
-//    def as[T: RootJsonFormat]: Future[T] = underlying.map(response => {
-//      if (response.status.isSuccess) {
-//        val convertedEntity = response.entity.as[T]
-//        if (convertedEntity.isRight) convertedEntity.right.get
-//        else throw new PipelineException(convertedEntity.left.get.toString)
-//      }
-//      else throw new UnsuccessfulResponseException(response)
-//    })
-
     def as[T](implicit unmarshaller: Unmarshaller[T]): Future[T] = underlying.map(response => {
       if (response.status.isSuccess) {
         response.entity.as[T] match {
@@ -42,6 +33,6 @@ package object pimps extends Logging {
   }
 
   implicit class PimpedUnsuccessfulResponseException(val underlying: UnsuccessfulResponseException) {
-    def asApiError = underlying.response.entity.asString.asJson.convertTo[ApiError] // TODO: What if this craps out in parsing?
+    def asApiError = underlying.response.entity.asString.asJson.convertTo[ApiError]
   }
 }
