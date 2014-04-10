@@ -34,7 +34,6 @@ package object callfirexml {
     }
 
     val filteredAttributes = filterAttributes(attributes)
-    println("Filtered attributes are: " + filteredAttributes)
     if (filteredAttributes.isEmpty) Null
     else iterator(filteredAttributes.tail, new UnprefixedAttribute(filteredAttributes.head._1, valueAsString(filteredAttributes.head._2), Null))
   }
