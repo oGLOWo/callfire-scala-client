@@ -62,10 +62,6 @@ trait Client {
     )
 
   private def constructPath(path: String): String = {
-    val base = if (ApiBase.endsWith("/")) ApiBase.stripSuffix("/")
-    else ApiBase |> {
-      s => if (s.startsWith("/")) s else "/" + s
-    }
     val trimmedPath = if (path.startsWith("/")) path.stripSuffix("/") else path
     s"$base/$trimmedPath"
   }
@@ -74,7 +70,7 @@ trait Client {
     val endpoint = constructPath(path)
     maybeParameters match {
       case Some(parameters) => {
-        println(s"Hitting $endpoint with GET and ${FormData(parameters)}")
+        log.debug(s"Hitting $endpoint with GET and ${FormData(parameters)}")
         Get(endpoint, FormData(parameters))
       }
       case None => Get(endpoint)

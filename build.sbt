@@ -1,24 +1,59 @@
-import AssemblyKeys._
+import SonatypeKeys._
 
-assemblySettings
+sonatypeSettings
 
 name := "callfire-scala-client"
 
 organization := "com.oglowo"
 
-scalaVersion := "2.10.3"
+version := "0.5"
 
-version := "0.3"
+description := "CallFire Scala client sdk for hitting REST endpoints and generating CallFireXML Call Control data"
+
+startYear :=  Some(2013)
+
+homepage      := Some(url("https://github.com/oGLOWo/callfire-scala-client"))
+
+organizationHomepage := Some(url("http://oGLOWo.com"))
+
+licenses      := Seq(("Apache 2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))
+
+scmInfo       := Some(ScmInfo(url("https://github.com/oGLOWo/callfire-scala-client"), "scm:git:https://github.com/oGLOWo/callfire-scala-client.git", Some("scm:git:git@github.com:oGLOWo/callfire-scala-client.git")))
+
+scalaVersion  := "2.10.4"
+
+crossScalaVersions := Seq("2.10.0", "2.10.1", "2.10.2", "2.10.3", "2.10.4")
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8", "-language:postfixOps", "-language:implicitConversions", "-Xlint")
 
 scalacOptions in Test ++= Seq("-Yrangepos")
 
-//javaOptions := Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5006")
+useGpg := true
+
+publishMavenStyle := true
+
+publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+          Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+          Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+}
+
+publishArtifact in Test := false
+
+pomIncludeRepository := { _ => false }
+
+pomExtra :=
+  <developers>
+    <developer>
+      <id>oGLOWo</id>
+      <name>Adrian Rodriguez</name>
+      <url>http://oGLOWo.com</url>
+    </developer>
+  </developers>
 
 resolvers ++= Seq("spray repo" at "http://repo.spray.io/")
-
-fork := false
 
 libraryDependencies ++= {
   val akkaVersion = "2.2.3"
