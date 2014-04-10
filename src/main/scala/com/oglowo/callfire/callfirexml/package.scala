@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.log4j.Logging
 
 package object callfirexml {
   def metadata(attributes: Map[String, _]): MetaData = {
-    def filterAttributes(a: Map[String, _]) = a.filter(entry => {
+    def filterAttributes(a: Map[String, _]) = a.filter({ entry: Tuple2[String, Any] => 
       entry._2 match {
         case o: Option[_] => o match {
           case Some(s) => true

@@ -63,7 +63,7 @@ trait Client {
 
   private def constructPath(path: String): String = {
     val trimmedPath = if (path.startsWith("/")) path.stripSuffix("/") else path
-    s"$base/$trimmedPath"
+    s"$ApiBase/$trimmedPath"
   }
 
   def get(path: String, maybeParameters: Option[Map[String, String]] = None): Future[HttpResponse] = pipeline {
