@@ -13,13 +13,13 @@ import com.oglowo.callfire.Imports._
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.money.{CurrencyUnit, Money}
 import com.github.nscala_time.time.Imports._
-import com.typesafe.scalalogging.log4j.Logging
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import scala.concurrent.duration.{Duration => ScalaDuration}
 import java.util.concurrent.TimeUnit
 import scalaz._
 import Scalaz._
 
-object ApiEntityFormats extends DefaultJsonProtocol with Logging {
+object ApiEntityFormats extends DefaultJsonProtocol with LazyLogging {
   val CallFireDateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-ddZ")
   val CallFireIsoDateTimeFormatter = ISODateTimeFormat.dateTimeNoMillis
 

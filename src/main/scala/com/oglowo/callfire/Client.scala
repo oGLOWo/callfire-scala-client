@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import com.oglowo.callfire.entity._
 import com.oglowo.callfire.json.ApiEntityFormats._
 import akka.event.Logging
-import com.typesafe.scalalogging.log4j.Logging
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import spray.httpx.encoding.{Gzip, Deflate}
 import spray.http.HttpHeaders._
 import pimps._

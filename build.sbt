@@ -6,7 +6,7 @@ name := "callfire-scala-client"
 
 organization := "com.oglowo"
 
-version := "0.5"
+version := "0.6"
 
 description := "CallFire Scala client sdk for hitting REST endpoints and generating CallFireXML Call Control data"
 
@@ -56,26 +56,24 @@ pomExtra :=
 resolvers ++= Seq("spray repo" at "http://repo.spray.io/")
 
 libraryDependencies ++= {
-  val akkaVersion = "2.2.3"
-  val sprayVersion = "1.2.0"
+  val akkaVersion = "2.3.0"
+  val sprayVersion = "1.3.1"
   Seq(
-    "io.spray"                  %   "spray-can"           %  sprayVersion,
-    "io.spray"                  %   "spray-http"          %  sprayVersion,
-    "io.spray"                  %   "spray-httpx"         %  sprayVersion,
-    "io.spray"                  %   "spray-util"          %  sprayVersion,
-    "io.spray"                  %   "spray-testkit"       %  sprayVersion,
-    "io.spray"                  %   "spray-client"        %  sprayVersion,
-    "com.typesafe.akka"         %%  "akka-actor"          %  akkaVersion,
-    "com.typesafe.akka"         %%  "akka-testkit"        %  akkaVersion,
-    "org.specs2"                %%  "specs2"              %  "2.2.3"         %  "test",
-    "io.spray"                  %%  "spray-json"          %  "1.2.5",
-    "org.scalaz"                %%  "scalaz-core"         %  "7.0.2",
-    "com.chuusai"               %%  "shapeless"           %  "1.2.4",
-    "com.typesafe"              %%  "scalalogging-log4j"  %  "1.0.1",
-    "com.github.nscala-time"    %%  "nscala-time"         %  "0.4.2",
-    "org.apache.logging.log4j"  %  "log4j-api"            %  "2.0-beta9",
-    "org.apache.logging.log4j"  %  "log4j-core"           %  "2.0-beta9",
-    "org.joda"                  %  "joda-money"           %  "0.9",
-    "com.oglowo"                %% "scala-phonenumber"    %  "0.1"
+    "io.spray"                    %   "spray-can"            %  sprayVersion,
+    "io.spray"                    %   "spray-http"           %  sprayVersion,
+    "io.spray"                    %   "spray-httpx"          %  sprayVersion,
+    "io.spray"                    %   "spray-util"           %  sprayVersion,
+    "io.spray"                    %   "spray-testkit"        %  sprayVersion    %  "test",
+    "io.spray"                    %   "spray-client"         %  sprayVersion,
+    "com.typesafe.akka"           %%  "akka-actor"           %  akkaVersion,
+    "com.typesafe.akka"           %%  "akka-testkit"         %  akkaVersion     %  "test",
+    "org.specs2"                  %%  "specs2-core"          %  "2.3.7"         %  "test",
+    "io.spray"                    %%  "spray-json"           %  "1.2.6",
+    "org.scalaz"                  %%  "scalaz-core"          %  "7.0.2",
+    "com.chuusai"                 %%  "shapeless"            %  "1.2.4",
+    "com.typesafe.scala-logging"  %%  "scala-logging-slf4j"  %  "2.1.2",
+    "com.github.nscala-time"      %%  "nscala-time"          %  "0.4.2",
+    "org.joda"                    %   "joda-money"           %  "0.9",
+    "com.oglowo"                  %%  "scala-phonenumber"    %  "0.3"
   )
 }

@@ -15,15 +15,11 @@ trait ProductionClientConnection extends ClientConnection {
   implicit val context: ExecutionContext = system.dispatcher
   implicit val timeout: Timeout = 360.seconds
 
-  // DO NOT commit and push the credentials out to github since this bitch is open source.
-  // You don't want to give the world access to your CallFire account because that might
-  // run up your bill quite a bit. If you do push it out, go to the callfire dashboard
-  // and remove these credentials from API Access and create a new set.
-  val credentials: Pair[String, String] = ("your-callfire-api-username", "your-callfire-api-password")
+  val credentials: Pair[String, String] = (system.settings.config.getString("com.oglowo.callfire.username"), system.settings.config.getString("com.oglowo.callfire.password"))
 
   val connection: ActorRef = {
     for {
-      Http.HostConnectorInfo(connector, _) <- IO(Http) ? Http.HostConnectorSetup("www.callfire.com", port = 443, sslEncryption = true)
+      Http.HostConnectorInfo(connector, _) <- IO(Http) ? Http.HostConnectorSetup(system.settings.config.getString("com.oglowo.callfire.api-host"), port = 443, sslEncryption = true)
     } yield connector
   }.await
 }

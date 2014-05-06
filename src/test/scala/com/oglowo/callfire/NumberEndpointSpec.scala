@@ -8,11 +8,14 @@ import com.oglowo.callfire.pimps._
 import scalaz._
 import Scalaz._
 import spray.httpx.UnsuccessfulResponseException
+import spray.json._
+import spray.httpx.SprayJsonSupport._
 import com.oglowo.callfire.json.ApiEntityFormats._
 import com.oglowo.callfire.entity.PhoneNumber
 import scala.util.Success
 import scala.util.Failure
 import com.oglowo.callfire.entity.ApiError
+import org.specs2.execute.FailureException
 
 class NumberEndpointSpec extends Specification {
   "Number Endpoint" should {
@@ -26,7 +29,7 @@ class NumberEndpointSpec extends Specification {
         case Success(response) => result = Right(response)
         case Failure(error) => result = error match {
           case e: UnsuccessfulResponseException => Left(e.asApiError)
-          case e: Throwable => failure(e.getMessage)
+          case e: Throwable => throw new FailureException(org.specs2.execute.Failure(e.getMessage))
         }
       }
 
@@ -46,7 +49,7 @@ class NumberEndpointSpec extends Specification {
         case Success(response) => result = Right(response)
         case Failure(error) => result = error match {
           case e: UnsuccessfulResponseException => Left(e.asApiError)
-          case e: Throwable => failure(e.getMessage)
+          case e: Throwable => throw new FailureException(org.specs2.execute.Failure(e.getMessage))
         }
       }
 

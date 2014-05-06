@@ -2,11 +2,10 @@ package com.oglowo.callfire
 
 import scala.xml.{Null, UnprefixedAttribute, MetaData}
 import scala.annotation.tailrec
-import com.typesafe.scalalogging.log4j.Logging
 
 package object callfirexml {
   def metadata(attributes: Map[String, _]): MetaData = {
-    def filterAttributes(a: Map[String, _]) = a.filter({ entry: Tuple2[String, Any] => 
+    def filterAttributes(a: Map[String, _]) = a.filter({ entry: (String, Any) =>
       entry._2 match {
         case o: Option[_] => o match {
           case Some(s) => true

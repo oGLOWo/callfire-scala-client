@@ -12,10 +12,10 @@ import ExecutionContext.Implicits.global
 import com.oglowo.callfire.entity.ApiError
 import com.oglowo.callfire.json.ApiEntityFormats._
 import spray.httpx.unmarshalling.BasicUnmarshallers._
-import com.typesafe.scalalogging.log4j.Logging
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import scala.reflect.ClassTag
 
-package object pimps extends Logging {
+package object pimps extends LazyLogging {
   implicit class PimpedStringContext(val sc: StringContext) {
     def r = new util.matching.Regex(sc.parts.mkString, sc.parts.tail.map(_ => "x"): _*)
   }
