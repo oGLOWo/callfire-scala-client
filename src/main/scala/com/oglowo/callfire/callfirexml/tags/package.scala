@@ -3,6 +3,7 @@ package com.oglowo.callfire.callfirexml
 import scala.xml._
 import spray.http.Uri
 import com.oglowo.callfire.entity.PhoneNumber
+import com.oglowo.callfire.{BetterEnumerationCompanion, BetterEnumeration}
 
 package object tags {
   abstract class CallFireXmlTag(val name: Option[String],
@@ -119,15 +120,46 @@ package object tags {
       label = "record",
       tagAttributes = Map("name" -> name, "varname" -> variableName, "background" -> background, "timeout" -> timeoutMilliseconds))
 
-  class MusicOnHold(val value: String) {
-    require(MusicOnHold.ValidValues.contains(value))
-  }
-  object MusicOnHold {
-    val ValidValues = Set("silence", "default")
-  }
+  sealed trait MusicOnHold extends BetterEnumeration {
 
-  case object Silence extends MusicOnHold("silence")
-  case object DefaultMusic extends MusicOnHold("default")
+  }
+  object MusicOnHold extends BetterEnumerationCompanion[MusicOnHold] {
+    override val values: Set[MusicOnHold] = Set(
+      Silence,
+      DefaultMusic,
+      Ringing,
+      Alternative,
+      Blues,
+      Celtic,
+      Classical,
+      Country,
+      Instrumental,
+      Jazz,
+      NeoPunk,
+      NewAge,
+      Pop,
+      Rock,
+      Swing,
+      Techno
+    )
+
+    case object Silence extends MusicOnHold { override val name = "silence" }
+    case object DefaultMusic extends MusicOnHold { override val name = "default" }
+    case object Ringing extends MusicOnHold { override val name = "ringing" }
+    case object Alternative extends MusicOnHold { override val name = "alternative" }
+    case object Blues extends MusicOnHold { override val name = "blues" }
+    case object Celtic extends MusicOnHold { override val name = "celtic" }
+    case object Classical extends MusicOnHold { override val name = "classical" }
+    case object Country extends MusicOnHold { override val name = "country" }
+    case object Instrumental extends MusicOnHold { override val name = "instrumental" }
+    case object Jazz extends MusicOnHold { override val name = "jazz" }
+    case object NeoPunk extends MusicOnHold { override val name = "neopunk" }
+    case object NewAge extends MusicOnHold { override val name = "newage" }
+    case object Pop extends MusicOnHold { override val name = "pop" }
+    case object Rock extends MusicOnHold { override val name = "rock" }
+    case object Swing extends MusicOnHold { override val name = "swing" }
+    case object Techno extends MusicOnHold { override val name = "techno" }
+  }
 
   class RingMode(val value: String) {
     require(RingMode.ValidValues.contains(value))
@@ -141,7 +173,7 @@ package object tags {
 
   case class Expression(value: String) extends CallFireTextTag[String](value)
 
-  case class Transfer(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, numbers: Seq[PhoneNumber] = Seq.empty, screen: Boolean = false)
+  case class Transfer(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = MusicOnHold.DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, numbers: Seq[PhoneNumber] = Seq.empty, screen: Boolean = false)
     extends CallFireXmlTag(name = name,
       label = "transfer",
       tagAttributes = Map(
@@ -151,7 +183,7 @@ package object tags {
           case Right(expression) => expression.value
         }},
         "calleridalpha" -> callerIdAlpha,
-        "musiconhold" -> musicOnHold.value,
+        "musiconhold" -> musicOnHold.name,
         "continue-after" -> continueAfter,
         "mode" -> ringMode.value,
         "timeout" -> timeoutSeconds,
@@ -162,7 +194,7 @@ package object tags {
     if (screen == true) require(whisperTextToSpeech.isDefined && !whisperTextToSpeech.get.trim.isEmpty, "If you want to screen calls, you must set the whisper tts. For example, Call from 2 1 3 4 4 8 5 9 1 6. Press 1 to accept.")
   }
 
-  case class TransferTo(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, screen: Boolean = false, numbers: Expression)
+  case class TransferTo(override val name: Option[String] = None, callerId: Either[PhoneNumber, Expression], callerIdAlpha: Option[String] = None, musicOnHold: MusicOnHold = MusicOnHold.DefaultMusic, continueAfter: Boolean = false, ringMode: RingMode = RingAllRingMode, timeoutSeconds: Option[Int] = None, whisperTextToSpeech: Option[String] = None, screen: Boolean = false, numbers: Expression)
     extends CallFireXmlTag(name = name,
       label = "transfer",
       tagAttributes = Map(
@@ -172,7 +204,7 @@ package object tags {
           case Right(expression) => expression.value
         }},
         "calleridalpha" -> callerIdAlpha,
-        "musiconhold" -> musicOnHold.value,
+        "musiconhold" -> musicOnHold.name,
         "continue-after" -> continueAfter,
         "mode" -> ringMode.value,
         "timeout" -> timeoutSeconds,
