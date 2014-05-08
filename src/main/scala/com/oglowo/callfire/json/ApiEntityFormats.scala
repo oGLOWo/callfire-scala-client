@@ -18,6 +18,7 @@ import scala.concurrent.duration.{Duration => ScalaDuration}
 import java.util.concurrent.TimeUnit
 import scalaz._
 import Scalaz._
+import com.oglowo.callfire.callfirexml.tags.MusicOnHold
 
 object ApiEntityFormats extends DefaultJsonProtocol with LazyLogging {
   val CallFireDateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-ddZ")
@@ -173,7 +174,7 @@ object ApiEntityFormats extends DefaultJsonProtocol with LazyLogging {
 
     def read(json: JsValue): Money = json match {
       case JsString(s) => Money.parse(s)
-      case default => deserializationError(s"Expecting money to be json string, but got $default.getClass")
+      case default => deserializationError(s"Expecting money to be json string, but got ${default.getClass}")
     }
   }
 
@@ -182,8 +183,17 @@ object ApiEntityFormats extends DefaultJsonProtocol with LazyLogging {
 
     def read(json: JsValue): DateTime = json match {
       case JsNumber(value) => new DateTime(value)
-      case default => deserializationError(s"Expecting DateTime to be a number, but got $default.getClass")
+      case default => deserializationError(s"Expecting DateTime to be a number, but got ${default.getClass}")
     }
+  }
+
+  implicit val musicOnHoldFormat = new RootJsonFormat[MusicOnHold] {
+    override def read(json: JsValue): MusicOnHold = json match {
+      case JsString(value) => MusicOnHold.withName(value)
+      case default => deserializationError(s"Expecting music on hold to be a json string, but got ${default.getClass}")
+    }
+
+    override def write(obj: MusicOnHold): JsValue = obj.name.toJson
   }
 
   implicit val LeaseFormat = new RootJsonFormat[Lease] {
@@ -470,7 +480,7 @@ object ApiEntityFormats extends DefaultJsonProtocol with LazyLogging {
 
     def read(json: JsValue): OrderStatus = json match {
       case JsString(s) => OrderStatus.withName(s)
-      case default => deserializationError(s"Expecting OrderStatus to be json string, but got $default.getClass")
+      case default => deserializationError(s"Expecting OrderStatus to be json string, but got ${default.getClass}")
     }
   }
 
