@@ -1,10 +1,7 @@
 package com.oglowo.callfire.json
 
 import spray.json._
-import com.oglowo.callfire.entity.{SoundReference, SoundMetaData, SoundType, SoundStatus, PhoneNumberFeature, PhoneNumberConfiguration, Region, Lease, InboundCallConfigurationType, IvrConfigurationType, CallTrackingConfigurationType, CallTrackingConfiguration, InboundIvrConfiguration, PhoneNumberStatus, KeywordStatus, OrderReference, Order, OrderItem, OrderStatus, Keyword, RecordingMeta, ApiEntity, CallRecord, Call, Result, ActionState, CallFinishedEvent}
-import com.oglowo.callfire.entity.{Order => CallFireOrder}
-import com.oglowo.callfire.entity.ApiError
-import com.oglowo.callfire.entity.PhoneNumber
+import com.oglowo.callfire.entity.{Order => CallFireOrder, _}
 import com.github.nscala_time.time.Imports._
 import scala.xml.XML
 import scala.Seq
@@ -19,6 +16,24 @@ import java.util.concurrent.TimeUnit
 import scalaz._
 import Scalaz._
 import com.oglowo.callfire.callfirexml.tags.MusicOnHold
+import com.oglowo.callfire.entity.Region
+import com.oglowo.callfire.entity.SoundReference
+import com.oglowo.callfire.entity.RecordingMeta
+import scalaz.Failure
+import com.oglowo.callfire.entity.CallFinishedEvent
+import scala.Some
+import com.oglowo.callfire.entity.SoundMetaData
+import scalaz.Success
+import com.oglowo.callfire.entity.OrderItem
+import com.oglowo.callfire.entity.PhoneNumberConfiguration
+import com.oglowo.callfire.entity.Lease
+import com.oglowo.callfire.entity.ApiError
+import com.oglowo.callfire.entity.OrderReference
+import com.oglowo.callfire.entity.CallRecord
+import com.oglowo.callfire.entity.Call
+import com.oglowo.callfire.entity.InboundIvrConfiguration
+import com.oglowo.callfire.entity.CallTrackingConfiguration
+import com.oglowo.callfire.entity.Order
 
 object ApiEntityFormats extends DefaultJsonProtocol with LazyLogging {
   val CallFireDateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-ddZ")
@@ -82,6 +97,34 @@ object ApiEntityFormats extends DefaultJsonProtocol with LazyLogging {
           case None => deserializationError("Failure deserializing SoundReference because there was no field ResourceReference that was present")
         }
       }
+      case _ => deserializationError(s"Expecting that the response would be a json object, but it wasn't ... it was ${json.getClass}")
+    }
+  }
+
+  implicit val TextBroadcastReferenceFormat = new RootJsonFormat[TextBroadcastReference] {
+    def write(obj: TextBroadcastReference): JsValue = Option(obj) match {
+      case Some(reference) => JsObject(Map(
+        "id" -> reference.id.toJson,
+        "location" -> reference.location.toJson
+      ))
+      case None => serializationError("null object cannot be serialized as TextBroadcastReference")
+    }
+
+    def read(json: JsValue): TextBroadcastReference = json match {
+      case responseJson: JsObject =>
+        responseJson.fields.get("ResourceReference") match {
+          case Some(reference) =>
+            reference match {
+              case referenceJson: JsObject => {
+                referenceJson.getFields("Id", "Location") match {
+                  case Seq(JsNumber(id), JsString(location)) => TextBroadcastReference(id.toLong, Uri(location))
+                  case _ => deserializationError("Failure deserializing order ResourceReference because required fields Id and Location were not all present")
+                }
+              }
+              case default => deserializationError(s"Failed to deserialize ResourceReference. Exepecting JsObject, but got ${default.getClass}")
+            }
+          case None => deserializationError("Failure deserializing TextBroadcastReference because there was no field ResourceReference that was present")
+        }
       case _ => deserializationError(s"Expecting that the response would be a json object, but it wasn't ... it was ${json.getClass}")
     }
   }

@@ -295,6 +295,16 @@ trait Client {
     get(s"call/$id.json").as[Call]
   }
 
+  // bigMessageStrategy - None means CallFire will use their default which is currently send multiple
+  def sendText(to: PhoneNumber, message: String, from: Option[PhoneNumber] = None, bigMessageStrategy: Option[BigMessageStrategy] = None): Future[TextBroadcastReference] = {
+    val parameters =
+      { Map("To" -> to.number.toString, "Message" -> message) } |>
+      { m => if (from.isDefined) m + ("From" -> from.get.number.toString) else m } |>
+      { m => if (bigMessageStrategy.isDefined) m + ("BigMessageStrategy" -> bigMessageStrategy.get.name) else m }
+
+    post("text.json", parameters.some).as[TextBroadcastReference]
+  }
+
   def shutdown(): Unit = {
     IO(Http)(system).ask(Http.CloseAll)(60.seconds).await
     system.shutdown()
