@@ -11,6 +11,7 @@ case class CallRecord(id: Long, result: Result, finishedOn: DateTime, billedAmou
   def billedDuration: Duration = (durationInSeconds.toDouble / 1.minute.toSeconds).ceil.minutes
   def duration: Duration = Duration(durationInSeconds.toLong, TimeUnit.SECONDS)
   def isBillable: Boolean = billedAmount > 0
-  def containsVoicemail: Boolean = !recordingsMetaData.isEmpty
+  def containsRecording(recordingName: String): Boolean = recordingsMetaData.exists(_.name == recordingName)
+  def recording(recordingName: String): Option[RecordingMeta] = recordingsMetaData.find(_.name == recordingName)
 }
 

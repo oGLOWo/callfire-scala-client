@@ -4,6 +4,8 @@ import akka.actor.{ActorSystem, ActorRef}
 import akka.util.Timeout
 import scala.concurrent.ExecutionContext
 import spray.http.HttpCredentials
+import akka.io.IO
+import spray.can.Http
 
 trait ClientConnection {
   val context: ExecutionContext
@@ -11,4 +13,6 @@ trait ClientConnection {
   val timeout: Timeout
   val connection: ActorRef
   val credentials: Pair[String, String]
+
+  def shutdown(): Unit
 }

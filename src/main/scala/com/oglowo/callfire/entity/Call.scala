@@ -1,7 +1,10 @@
 package com.oglowo.callfire.entity
 
+import com.oglowo.callfire._
 import org.joda.time.DateTime
 import scala.concurrent.duration._
+import scalaz._
+import Scalaz._
 
 case class Call(id: Long,
                 from: Option[PhoneNumber],
@@ -21,33 +24,34 @@ case class Call(id: Long,
 
   def duration(p: (CallRecord) => Boolean): Duration = (0.seconds.asInstanceOf[Duration] /: callRecords.filter(p))(_ + _.duration)
 
-  def voicemailSoundName: Option[String] = {
-    callRecords.find(_.containsVoicemail) match {
-      case Some(callRecord) => Some(callRecord.recordingsMetaData.head.name)
-      case None => None
-    }
+  def containsRecording() = callRecords.exists(_.recordingsMetaData.nonEmpty)
+
+  def containsRecording(recordingName: String) = callRecords.exists(_.containsRecording(recordingName))
+
+  def recordingId(recordingName: String): Option[Long] = {
+    for {
+      record <- callRecords.find(_.containsRecording(recordingName))
+      recording <- record.recording(recordingName)
+    } yield recording.id
   }
 
-  def containsVoicemail: Boolean = {
-    callRecords.find(_.containsVoicemail) match {
-      case Some(s) => true
-      case None => false
-    }
+  def recording(recordingName: String): Option[RecordingMeta] = {
+    for {
+      record <- callRecords.find(_.containsRecording(recordingName))
+      recording <- record.recording(recordingName)
+    } yield recording
   }
 
-  def voicemailRecordingId: Option[Long] = {
+  def containsVoicemail(recordingName: String = DefaultVoicemailRecordingName): Boolean = containsRecording(recordingName)
 
-    callRecords.find(_.containsVoicemail) match {
-      case Some(callRecord) => Some(callRecord.recordingsMetaData.head.id)
-      case None => None
-    }
-  }
+  def voicemailRecordingId(recordingName: String = DefaultVoicemailRecordingName): Option[Long] = recordingId(recordingName)
 
-  def voicemailRecording: Option[RecordingMeta] = {
-    callRecords.find(_.containsVoicemail) match {
-      case Some(callRecord) => Some(callRecord.recordingsMetaData.head)
-      case None => None
-    }
-  }
+  def voicemailRecording(recordingName: String = DefaultVoicemailRecordingName): Option[RecordingMeta] = recording(recordingName)
+
+  def containsCallRecording(recordingName: String = DefaultCallRecordingName): Boolean = containsRecording(recordingName)
+
+  def callRecordingId(recordingName: String = DefaultCallRecordingName): Option[Long] = recordingId(recordingName)
+
+  def callRecording(recordingName: String = DefaultCallRecordingName): Option[RecordingMeta] = recording(recordingName)
 }
 

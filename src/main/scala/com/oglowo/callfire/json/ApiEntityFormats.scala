@@ -792,7 +792,10 @@ object ApiEntityFormats extends DefaultJsonProtocol with LazyLogging {
 
           val from = callFields.get("FromNumber") match {
             case Some(JsString(s)) => Validation.fromTryCatch(PhoneNumber(s)) match {
-              case Success(s) => Some(s)
+              case Success(s) => Validation.fromTryCatch(PhoneNumber(s.number)) match {
+                case Success(number) => Some(number)
+                case Failure(error) => None
+              }
               case Failure(error) => None
             }
             case Some(JsNumber(n)) => Validation.fromTryCatch(PhoneNumber(n.toString)) match {

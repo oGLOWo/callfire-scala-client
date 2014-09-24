@@ -11,14 +11,14 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import com.typesafe.config.{ConfigFactory, Config}
 
-case class ProductionClientConnection(actorSystem: ActorSystem, config: Config) extends ClientConnection {
-  implicit val system: ActorSystem = actorSystem
+case class StandaloneProductionClientConnection(config: Config) extends ClientConnection {
+  implicit val system: ActorSystem = ActorSystem("callfire-scala-spray-client")
   implicit val context: ExecutionContext = system.dispatcher
   implicit val timeout: Timeout = 360.seconds
 
-  val credentials: Pair[String, String] = (config.getString("com.oglowo.callfire.username"), config.getString("com.oglowo.callfire.password"))
+  def this() = this(ConfigFactory.load())
 
-  def this(system: ActorSystem) = this(system, ConfigFactory.load())
+  val credentials: Pair[String, String] = (config.getString("com.oglowo.callfire.username"), config.getString("com.oglowo.callfire.password"))
 
   val connection: ActorRef = {
     for {
@@ -26,9 +26,8 @@ case class ProductionClientConnection(actorSystem: ActorSystem, config: Config) 
     } yield connector
   }.await
 
-  override def shutdown(): Unit = {
-    // we don't want to to this since it's not our ActorSystem
-    //IO(Http)(system).ask(Http.CloseAll)(1.seconds).await
-    //system.shutdown()
+  def shutdown(): Unit = {
+    IO(Http)(system).ask(Http.CloseAll)(1.seconds).await
+    system.shutdown()
   }
 }

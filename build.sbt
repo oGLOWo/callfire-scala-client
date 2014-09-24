@@ -6,7 +6,7 @@ name := "callfire-scala-client"
 
 organization := "com.oglowo"
 
-version := "0.7.2"
+version := "0.8.3"
 
 description := "CallFire Scala client sdk for hitting REST endpoints and generating CallFireXML Call Control data"
 

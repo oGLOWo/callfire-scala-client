@@ -273,4 +273,30 @@ package object tags {
       ),
       body = body
     )
+
+  class DtmfTone(val tone: String) {
+    override def toString: String = tone
+  }
+  object DtmfTone {
+    case object `0` extends DtmfTone("0")
+    case object `1` extends DtmfTone("1")
+    case object `2` extends DtmfTone("2")
+    case object `3` extends DtmfTone("3")
+    case object `4` extends DtmfTone("4")
+    case object `5` extends DtmfTone("5")
+    case object `6` extends DtmfTone("6")
+    case object `7` extends DtmfTone("7")
+    case object `8` extends DtmfTone("8")
+    case object `9` extends DtmfTone("9")
+    case object `*` extends DtmfTone("*")
+    case object `#` extends DtmfTone("#")
+    case object TwoSecondPause extends DtmfTone("w")
+  }
+
+  case class Dtmf(override val name: Option[String] = None, tones: Seq[DtmfTone]) extends CallFireXmlTag(
+    name = name,
+    label = "dtmf",
+    tagAttributes = Map("name" -> name),
+    body = Seq(Text(tones.mkString))
+  )
 }

@@ -41,22 +41,23 @@ import com.oglowo.callfire.entity.SoundMetaData
 import spray.http.HttpResponse
 import spray.http.BodyPart
 import java.nio.charset.Charset
+import com.typesafe.config.{ConfigFactory, Config}
 
 
-trait Client {
-  this: ClientConnection =>
+class Client(clientConnection: ClientConnection, config: Config) {
+  def this(clientConnection: ClientConnection) = this(clientConnection, ConfigFactory.load())
 
   val ApiBase = "/api/1.1/rest"
 
-  lazy val log = Logging(system, getClass)
+  lazy val log = Logging(clientConnection.system, getClass)
 
-  import system.dispatcher
+  import clientConnection.system.dispatcher
 
   lazy val pipeline: HttpRequest => Future[HttpResponse] = (
-    addCredentials(BasicHttpCredentials(credentials._1, credentials._2))
-      ~> addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "1.0", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.2.0", "http://spray.io")))
+    addCredentials(BasicHttpCredentials(clientConnection.credentials._1, clientConnection.credentials._2))
+      ~> addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "0.8", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.3.1", "http://spray.io")))
       ~> logRequest(log)
-      ~> sendReceive(connection)(context, timeout)
+      ~> sendReceive(clientConnection.connection)(clientConnection.context, clientConnection.timeout)
       ~> decode(Deflate)
       ~> decode(Gzip)
     )
@@ -279,17 +280,21 @@ trait Client {
     get(s"call/sound/$id.$extension").as(BasicUnmarshallers.ByteArrayUnmarshaller)
   }
 
-  def getVoicemailSoundFromCall(call: Call, soundType: SoundType = Mp3SoundType): Future[Array[Byte]] = {
+  def getRecordingSoundFromCall(recordingName: String, call: Call, soundType: SoundType = Mp3SoundType): Future[Array[Byte]] = {
     val extension = soundType match {
       case Mp3SoundType => "mp3"
       case WavSoundType =>  "wav"
     }
 
-    call.voicemailSoundName match {
-      case Some(soundName) => get(s"call/${call.id}/$soundName.$extension").as(BasicUnmarshallers.ByteArrayUnmarshaller)
-      case None => throw new IllegalArgumentException(s"Call $call does not contain voicemail sound name")
+    call.containsRecording(recordingName) match {
+      case true => get(s"call/${call.id}/$recordingName.$extension").as(BasicUnmarshallers.ByteArrayUnmarshaller)
+      case false => throw new IllegalArgumentException(s"Call $call does not contain a recording with name '$recordingName'")
     }
   }
+
+  def getVoicemailSoundFromCall(call: Call, soundType: SoundType = Mp3SoundType): Future[Array[Byte]] = getRecordingSoundFromCall(DefaultVoicemailRecordingName, call, soundType)
+
+  def getCallRecordingSoundFromCall(call: Call, soundType: SoundType = Mp3SoundType): Future[Array[Byte]] = getRecordingSoundFromCall(DefaultCallRecordingName, call, soundType)
 
   def getCall(id: Long): Future[Call] = {
     get(s"call/$id.json").as[Call]
@@ -305,8 +310,5 @@ trait Client {
     post("text.json", parameters.some).as[TextBroadcastReference]
   }
 
-  def shutdown(): Unit = {
-    IO(Http)(system).ask(Http.CloseAll)(60.seconds).await
-    system.shutdown()
-  }
+  def shutdown(): Unit = clientConnection.shutdown()
 }

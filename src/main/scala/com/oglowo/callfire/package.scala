@@ -14,5 +14,6 @@ import com.oglowo.callfire.entity.ApiError
 import com.oglowo.callfire.json.ApiEntityFormats._
 
 package object callfire {
-
+  val DefaultVoicemailRecordingName = "voicemail_recording"
+  val DefaultCallRecordingName = "call_recording"
 }
