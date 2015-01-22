@@ -55,7 +55,7 @@ class Client(clientConnection: ClientConnection, config: Config) {
 
   lazy val pipeline: HttpRequest => Future[HttpResponse] = (
     addCredentials(BasicHttpCredentials(clientConnection.credentials._1, clientConnection.credentials._2))
-      ~> addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "0.8", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.3.1", "http://spray.io")))
+      ~> addHeader(`User-Agent`(ProductVersion("Callfire Scala Client", "0.8.7", "http://github.com/oGLOWo/callfire-scala-client"), ProductVersion("spray-client", "1.3.2", "http://spray.io")))
       ~> logRequest(log)
       ~> sendReceive(clientConnection.connection)(clientConnection.context, clientConnection.timeout)
       ~> decode(Deflate)
@@ -308,6 +308,11 @@ class Client(clientConnection: ClientConnection, config: Config) {
       { m => if (bigMessageStrategy.isDefined) m + ("BigMessageStrategy" -> bigMessageStrategy.get.name) else m }
 
     post("text.json", parameters.some).as[TextBroadcastReference]
+  }
+
+  def getTextByBroadcastId(broadcastId: Long): Future[Text] = {
+    val parameters = Map("BroadcastId" -> broadcastId.toString, "MaxResults" -> 1.toString)
+    get("text.json", parameters.some).as[Seq[Text]].map(_.head)
   }
 
   def shutdown(): Unit = clientConnection.shutdown()

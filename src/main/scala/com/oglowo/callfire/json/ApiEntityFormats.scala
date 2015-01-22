@@ -975,6 +975,16 @@ object ApiEntityFormats extends DefaultJsonProtocol with LazyLogging {
             case None => deserializationError("State was not present in the call object")
           }
 
+          val batchId: Option[Long] = callFields.get("BatchId") match {
+            case Some(JsNumber(n)) => Some(n.toLong)
+            case None => None
+          }
+
+          val broadcastId: Option[Long] = callFields.get("BroadcastId") match {
+            case Some(JsNumber(n)) => Some(n.toLong)
+            case None => None
+          }
+
           val contactId = callFields.get("ContactId") match {
             case Some(JsNumber(n)) => n.toLong
             case None => deserializationError("ContactId was not present in the call object")
@@ -1015,7 +1025,7 @@ object ApiEntityFormats extends DefaultJsonProtocol with LazyLogging {
 
           }
 
-          Text(id, from, to, state, None, None, contactId, inbound, createdOn, modifiedOn, maybeFinalResult, maybeMessage, textRecords)
+          Text(id, from, to, state, batchId, broadcastId, contactId, inbound, createdOn, modifiedOn, maybeFinalResult, maybeMessage, textRecords)
         case None => deserializationError("Call was not present in call object")
       }
       case default => deserializationError(s"Expecting call to be json object, but got ${default.getClass.getName}")
